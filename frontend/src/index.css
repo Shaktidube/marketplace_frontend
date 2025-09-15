@@ -1,0 +1,44 @@
+@import "tailwindcss";  
+@keyframes auto-shine {
+  0% {
+    transform: translateX(-100%) ;
+  }
+  50% {
+    transform: translateX(200%) ;
+  } 
+  100% {
+    transform: translateX(500%) ;
+  }
+}
+@keyframes auto-shine-screen {
+  0% {
+    transform: translateX(-150%);
+  }
+  40% {
+    transform: translateX(0%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  70% {
+    transform: translateX(150%);
+  }
+  75%{
+    transform: translateX(0%);
+  }
+  80% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-150%);
+  }
+}
+
+.before\:animate-auto-shine-screen::before {
+  animation: auto-shine-screen 5s ease-in-out 1s infinite;
+}
+
+.before\:animate-auto-shine::before {
+  animation: auto-shine 2s ease-in-out 2s infinite; 
+}   
+
