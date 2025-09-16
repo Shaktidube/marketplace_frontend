@@ -19,6 +19,9 @@ const ConnectWallet = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const name = "MyNFT";
+  const singleQue = 'shakti';
+
   // useEffect(() => {
   //     console.log("socket connected?", socket.connected, socket);
   //     if(!socket.connected){
