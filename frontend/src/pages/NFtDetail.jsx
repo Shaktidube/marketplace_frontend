@@ -12,10 +12,11 @@ import {
   showToast,
 } from '../utils/helper';
 import SellModal from '../components/SellModal';
-import { BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract, ethers } from 'ethers';
 import { useAppKitProvider } from '@reown/appkit/react';
 import { FaSpinner } from 'react-icons/fa';
 import tokenAbi from '../utils/abis/tokenAbi.json';
+import AuctionModal from '../components/AuctionModal';
 
 const queryKey = {
   nftDetail: (nftId) => ['nftDetail', nftId],
@@ -26,6 +27,7 @@ const NFtDetail = () => {
   const user = useSelector((state) => state.auth.user);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const [isAuctionModalOpen, setIsAuctionModalOpen] = useState(false);
   const { walletProvider } = useAppKitProvider('eip155');
   const [selectedNft, setSelectedNft] = useState(null);
   const [isListing, setIsListing] = useState(false);
@@ -45,6 +47,11 @@ const NFtDetail = () => {
   const handleSellClick = useCallback((nft) => {
     setSelectedNft(nft);
     setIsSellModalOpen(true);
+  }, []);
+
+  const handleAuctionClick = useCallback((nft) => {
+    setSelectedNft(nft);
+    setIsAuctionModalOpen(true);
   }, []);
 
   const onConfirmSell = async (nft, price) => {
@@ -92,9 +99,6 @@ const NFtDetail = () => {
       setIsListing(false);
       setIsSellModalOpen(false);
       navigate('/buy-sell');
-
-      const nPriceInEth = parseFloat(price);
-      console.log('Price in ETH:', nPriceInEth);
 
       // await delay(10000);
       // setIsListing(false);
@@ -147,6 +151,78 @@ const NFtDetail = () => {
       console.log(error, 'error in cancelling nft listing');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const onConfirmAuction = async (nft, startingPrice, startTime, endTime) => {
+    try {
+      setIsAuctionModalOpen(true);
+      console.log('Auction modal is open ');
+      console.log('NFT to auction:', nft);
+      console.log('Starting price:', startingPrice);
+      console.log('End time (timestamp):', endTime);
+
+      const { contract } = await getContractInstance(walletProvider);
+
+      const ethersProvider = new BrowserProvider(walletProvider);
+      const signer = await ethersProvider.getSigner();
+
+      console.log('Creating mintContract instance for NFT approval:', nft);
+
+      const mintContract = new Contract(
+        data.data.nft.sTokenAddress,
+        tokenAbi,
+        signer
+      );
+
+      console.log('Approving NFT for auction...', nft);
+
+      const tx = await mintContract.approve(
+        import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
+        data.data.nft.nTokenId
+      );
+      setIsListing(true);
+      await tx.wait();
+      console.log('NFT APPROVED');
+
+      console.log("Creating auction...");
+      console.log(data.data.nft.sTokenAddress, data.data.nft.nTokenId, startTime , endTime,   startingPrice);
+
+      const priceInwei = ethers.parseUnits(startingPrice, 'ether');
+      console.log("Price in wei : ", priceInwei);
+
+      const auctionTx = await contract.createAuction(
+        data.data.nft.sTokenAddress,
+        data.data.nft.nTokenId,
+        startTime,
+        endTime,
+        priceInwei,
+      );
+      const rTx = await auctionTx.wait();
+      // showToast("success! We will notify you when it's available", "success");
+      console.log('NFT LISTED FOR AUCTION', rTx);
+
+      setIsListing(false);
+      setIsAuctionModalOpen(false);
+      navigate('/buy-sell');
+
+      const nPriceInEth = parseFloat(startingPrice);
+      console.log('Starting Price in ETH:', nPriceInEth);
+
+      setIsListing(false);
+      setIsSellModalOpen(false);
+
+      navigate('/buy-sell');
+    } catch (error) {
+      setIsListing(false);
+      setIsAuctionModalOpen(false);
+      console.error('Error listing NFT for auction:', error);
+      if (error.code === 'ACTION_REJECTED') {
+        showToast('Transaction rejected by user.', 'error');
+      } else if (error.reason === null) {
+        showToast('Insufficient funds!! NFt is blocked!', 'error');
+      }
+      console.log('error code : ', error.code);
     }
   };
 
@@ -239,14 +315,24 @@ const NFtDetail = () => {
           <p className='text-gray-400 mt-10'>Description: {nft.sDescription}</p>
 
           {user.sWalletAddress === nft.sCurrentOwner ? (
-            !nft.isApprovedForSale ? (
+            !nft.isApprovedForSale && !nft.isApprovedForAuction ? (
+              <div className='flex space-x-4'>
+
               <button
                 onClick={handleSellClick}
                 className='w-full mt-10 px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition'
                 disabled={isListing || isBuying}
-              >
-                Sell
+                >
+                Put on Sell
               </button>
+              <button
+                onClick={handleAuctionClick}
+                className='w-full mt-10 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition'
+                disabled={isListing || isBuying}
+                >
+                Put on Auction
+              </button>
+              </div>
             ) : (
               <button
                 onClick={() => handleCancelListing(nft)}
@@ -299,6 +385,14 @@ const NFtDetail = () => {
           onClose={() => setIsSellModalOpen(false)}
           nft={nftDataForModal}
           onConfirmSell={onConfirmSell}
+        />
+      )}
+      {selectedNft && (
+        <AuctionModal
+          isOpen={isAuctionModalOpen}
+          onClose={() => setIsAuctionModalOpen(false)}
+          nft={nftDataForModal}
+          onConfirmAuction={onConfirmAuction}
         />
       )}
     </div>

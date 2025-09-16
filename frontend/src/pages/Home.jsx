@@ -168,11 +168,15 @@ const Home = () => {
                   </p>
                 </div>
 
-                {nft.isApprovedForSale === true && (
-                  <div className='absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg'>
+                {nft.isApprovedForAuction ? (
+                  <div className="absolute top-2 right-2 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                    OnAuction
+                  </div>
+                ) : nft.isApprovedForSale ? (
+                  <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
                     OnSale
                   </div>
-                )}
+                ) : null}
               </Link>
             ))
           )}

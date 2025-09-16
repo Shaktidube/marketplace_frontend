@@ -85,6 +85,20 @@ const NavBar = () => {
       showToast('NFT burned and removed from your profile!', 'success');
     });
 
+    socket.on("AuctionStartedEventDetected", (data) => {
+      console.log("AuctionStartedEventDetected received:", data);
+      invalidateQueries(queryClient);
+      showToast("Auction started successfully!", "success");
+      navigate("/buy-sell");
+    });
+
+    socket.on("NewBidPlacedEventDetected" , (data) => {
+      console.log("NewBidPlacedEventDetected received:", data);
+      invalidateQueries(queryClient);
+      showToast("Bid placed successfully!", "success");
+
+    })
+
     return () => {
       socket.off('TransferEventDetected');
       socket.off('ListedEventDetected');
@@ -92,6 +106,8 @@ const NavBar = () => {
       socket.off('BuySuccessEventDetected');
       socket.off('CancelListingEventDetected');
       socket.off('BurnEventDetected');
+      socket.off('AuctionStartedEventDetected');
+      socket.off('NewBidPlacedEventDetected');
     };
   }, [user.sWalletAddress, navigate]);
 
