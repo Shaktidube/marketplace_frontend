@@ -15,6 +15,14 @@ const ConnectWallet = () => {
 
   const [existingUser, setExistingUser] = useState(null);
 
+
+
+
+
+
+
+  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

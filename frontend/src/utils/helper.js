@@ -179,6 +179,14 @@ export const cancelListing = async (nft, walletProvider) => {
   }
 };
 
+export const invalidateQueries = (queryClient) => {
+  queryClient.invalidateQueries(['profile']);
+  queryClient.invalidateQueries(['buy-nfts']);
+  queryClient.invalidateQueries(['nfts']);
+  queryClient.invalidateQueries(['nftDetail']);
+};
+
+
 export const erc721Abi = [
   // Approve another address to transfer the given token ID
   'function approve(address to, uint256 tokenId) external',
@@ -195,63 +203,3 @@ export const erc721Abi = [
   // Return the symbol
   'function symbol() external view returns (string)',
 ];
-
-export const useSocket = (socket, user, navigate) => {
-  useEffect(() => {
-    console.log('socket connected?', socket.connected, socket);
-    if (!socket.connected) {
-      socket.connect();
-      console.log('socket connected', socket);
-    }
-
-    socket.on('connect', () => {
-      console.log('socket connected', socket.id);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('socket disconnected', socket.id);
-    });
-
-    socket.on('connect_error', (err) => {
-      console.log(`Connection error: ${err}`);
-    });
-
-    socket.on('TransferEventDetected', (data) => {
-      console.log('TransferEventDetected received:', data);
-      showToast('NFT transferred successfully!', 'success');
-      navigate('/profile');
-    });
-
-    socket.on('ListedEventDetected', (data) => {
-      console.log('ListedEventDetected received:', data);
-      showToast('NFT listed for sale successfully!', 'success');
-      navigate('/buy-sell');
-    });
-
-    socket.on('BuySuccessEventDetected', (data) => {
-      console.log('BuySuccessEventDetected received:', data);
-      showToast('NFT bought successfully!', 'success');
-      navigate('/profile');
-    });
-
-    socket.on('CancelListingEventDetected', (data) => {
-      console.log('CancelListingEventDetected received:', data);
-      showToast('NFT listing cancelled successfully!', 'success');
-      navigate('/profile');
-    });
-
-    return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('connect_error');
-      socket.off('connection_success');
-    };
-  }, [user.sWalletAddress, navigate]);
-};
-
-export const invalidateQueries = (queryClient) => {
-  queryClient.invalidateQueries(['profile']);
-  queryClient.invalidateQueries(['buy-nfts']);
-  queryClient.invalidateQueries(['nfts']);
-  queryClient.invalidateQueries(['nftDetail']);
-};
