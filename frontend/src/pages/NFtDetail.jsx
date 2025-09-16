@@ -202,7 +202,7 @@ const NFtDetail = () => {
             <button
               className="ml-1 hover:text-teal-400"
               onClick={() => {
-                handleCopyToClipboard(nft.sFirstMInterAddress);
+                handleCopyToClipboard(nft.sTokenAddress);
                 showToast("Address Copied!");
               }}
             >

@@ -5,7 +5,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { disconnectWallet, setWalletAddress } from "../redux/authSlice";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getProfile } from "../api/user.js";
-import { getItemFromLocalStorage, showToast } from "../utils/helper";
+import { getItemFromLocalStorage, invalidateQueries, showToast } from "../utils/helper";
 import { useAppKitAccount, useAppKitProvider, useDisconnect } from "@reown/appkit/react";
 import socket from "../utils/socket.js";
 
@@ -38,7 +38,7 @@ const NavBar = () => {
 
       socket.on("TransferEventDetected", (data) => {
         console.log("TransferEventDetected received:", data);
-        queryClient.invalidateQueries(["profile"]);
+        invalidateQueries(queryClient);
         showToast("Newly minted NFT is now available!", "success");
         navigate("/profile");
       });
@@ -46,38 +46,35 @@ const NavBar = () => {
       socket.on("ListedEventDetected" , (data) => {
         console.log("ListedEventDetected received:", data);
         console.log("ListedEventDetected");
-        queryClient.invalidateQueries(["buy-nfts"]);
+        invalidateQueries(queryClient);
         showToast("listed nft is now available!", "success");
         navigate("/buy-sell");
       });
       
       socket.on("BuySuccessEventDetected", (data) => {  
         console.log("BuySuccessEventDetected received:", data);
-        queryClient.invalidateQueries(["profile"]);
+        invalidateQueries(queryClient);
         showToast("newly bought nft is now available", "success");
         navigate("/profile");
       });
 
       socket.on("NftTransferFromContract", (data) => {
         console.log("NftTransferFromContract received:", data);
-        queryClient.invalidateQueries(["profile"]);
+        invalidateQueries(queryClient);
         showToast("NFT transferred successfully!", "success");
         navigate("/profile");
       });
 
       socket.on("CancelListingEventDetected", (data) => {
         console.log("CancelListingEventDetected received:", data);
-        queryClient.invalidateQueries(["profile"]);
+        invalidateQueries(queryClient);
         showToast("NFT listing cancelled successfully!", "success");
         navigate("/profile");
       });
 
       socket.on("BurnEventDetected", (data) => {
         console.log("BurnEventDetected received:", data);
-        queryClient.invalidateQueries(["profile"]);
-        queryClient.invalidateQueries(["buy-nfts"]);
-        queryClient.invalidateQueries(["nfts"]);
-        queryClient.invalidateQueries(["nftDetail"]);
+        invalidateQueries(queryClient);
         showToast("NFT burned and removed from your profile!", "success");
       });
 
@@ -89,9 +86,7 @@ const NavBar = () => {
         socket.off("CancelListingEventDetected");
         socket.off("BurnEventDetected");
       };
-  }, [user.sWalletAddress , navigate])
-
- console.log("re mounting");
+  }, [user.sWalletAddress , navigate]);
 
   useEffect(() => {
     const handleStorage = async (event) => {

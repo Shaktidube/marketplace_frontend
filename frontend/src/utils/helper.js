@@ -2,7 +2,7 @@ import { BrowserProvider, Contract, ethers } from "ethers";
 import toast from "react-hot-toast";
 import abi from "./abis/abi.json";
 import tokenAbi from "./abis/tokenAbi.json";
-import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 
 export const getItemFromLocalStorage = (key) => {
@@ -252,4 +252,12 @@ export const useSocket = (socket, user, navigate) => {
         socket.off("connection_success");
       };
   }, [user.sWalletAddress , navigate])
+}
+
+
+export const invalidateQueries = (queryClient) => {
+    queryClient.invalidateQueries(["profile"]);
+    queryClient.invalidateQueries(["buy-nfts"]);
+    queryClient.invalidateQueries(["nfts"]);
+    queryClient.invalidateQueries(["nftDetail"]);
 }
