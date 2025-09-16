@@ -1,13 +1,13 @@
-@import "tailwindcss";  
+@import 'tailwindcss';
 @keyframes auto-shine {
   0% {
-    transform: translateX(-100%) ;
+    transform: translateX(-100%);
   }
   50% {
-    transform: translateX(200%) ;
-  } 
+    transform: translateX(200%);
+  }
   100% {
-    transform: translateX(500%) ;
+    transform: translateX(500%);
   }
 }
 @keyframes auto-shine-screen {
@@ -23,7 +23,7 @@
   70% {
     transform: translateX(150%);
   }
-  75%{
+  75% {
     transform: translateX(0%);
   }
   80% {
@@ -39,6 +39,5 @@
 }
 
 .before\:animate-auto-shine::before {
-  animation: auto-shine 2s ease-in-out 2s infinite; 
-}   
-
+  animation: auto-shine 2s ease-in-out 2s infinite;
+}

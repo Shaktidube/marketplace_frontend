@@ -21,16 +21,16 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
 
   const validatePrice = (value) => {
     if (!value.trim()) {
-      return "Price is required.";
+      return 'Price is required.';
     }
     const parsedPrice = parseFloat(value);
     if (isNaN(parsedPrice)) {
-      return "Invalid price. Please enter a valid number.";
+      return 'Invalid price. Please enter a valid number.';
     }
     if (parsedPrice <= 0) {
-      return "Price must be greater than zero.";
+      return 'Price must be greater than zero.';
     }
-    return "";
+    return '';
   };
 
   const validateForm = () => {
@@ -63,28 +63,30 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
       cleanedValue = parts[0] + '.' + parts[1].slice(0, 3);
     }
     setPrice(cleanedValue);
-    setErrors((prevErrors) => ({ ...prevErrors, price: validatePrice(cleanedValue) }));
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      price: validatePrice(cleanedValue),
+    }));
   };
 
   const handleSubmit = async () => {
-  if (!validateForm()) {
-    toast.error("Please correct the errors in the form.");
-    return;
-  }
-  setIsProcessing(true);
-  try {
-    const priceInEth = price.trim();
-    const priceInWei = ethers.parseEther(priceInEth);
+    if (!validateForm()) {
+      toast.error('Please correct the errors in the form.');
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const priceInEth = price.trim();
+      const priceInWei = ethers.parseEther(priceInEth);
 
-    await onConfirmSell(nft, priceInWei.toString());
-
-  } catch (error) {
-    console.error("Error converting price to Wei:", error);
-    toast.error("Failed to process the price. Please try again.");
-  } finally {
-    setIsProcessing(false);
-  }
-};
+      await onConfirmSell(nft, priceInWei.toString());
+    } catch (error) {
+      console.error('Error converting price to Wei:', error);
+      toast.error('Failed to process the price. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -92,11 +94,11 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-transparent bg-opacity-75 backdrop-blur-lg border-t-2 border-blue-400 border-b-2 flex items-center justify-center z-50 p-4"
+          className='fixed inset-0 bg-transparent bg-opacity-75 backdrop-blur-lg border-t-2 border-blue-400 border-b-2 flex items-center justify-center z-50 p-4'
           variants={backdropVariants}
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
+          initial='hidden'
+          animate='visible'
+          exit='hidden'
           onClick={() => {
             setIsProcessing(false);
             setErrors({});
@@ -105,11 +107,11 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
           }}
         >
           <motion.div
-            className="bg-gray-800 rounded-lg p-8 w-full max-w-md shadow-2xl relative border border-gray-700"
+            className='bg-gray-800 rounded-lg p-8 w-full max-w-md shadow-2xl relative border border-gray-700'
             variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial='hidden'
+            animate='visible'
+            exit='exit'
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -119,51 +121,64 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
                 setPrice('');
                 onClose();
               }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl"
-              aria-label="Close"
+              className='absolute top-4 right-4 text-gray-400 hover:text-white text-2xl'
+              aria-label='Close'
             >
               &times;
             </button>
 
-            <h2 className="text-3xl font-bold text-white mb-6 text-center">List for Sale</h2>
+            <h2 className='text-3xl font-bold text-white mb-6 text-center'>
+              List for Sale
+            </h2>
 
             {nft && (
-              <div className="flex flex-col items-center mb-6">
+              <div className='flex flex-col items-center mb-6'>
                 {nft.image ? (
                   <img
                     src={nft.image}
                     alt={nft.name || 'NFT Image'}
-                    className="w-32 h-32 object-cover rounded-lg border border-gray-600 shadow-md mb-4"
+                    className='w-32 h-32 object-cover rounded-lg border border-gray-600 shadow-md mb-4'
                   />
                 ) : (
-                  <div className="w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 text-sm mb-4 border border-gray-600">
+                  <div className='w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 text-sm mb-4 border border-gray-600'>
                     No Image
                   </div>
                 )}
-                <h3 className="text-xl font-semibold text-white text-center">{nft.name}</h3>
-                <p className="text-gray-400 text-sm">{nft.symbol}</p>
-                <p className="text-gray-500 text-xs mt-1 break-all">{nft.mintAddress}</p>
+                <h3 className='text-xl font-semibold text-white text-center'>
+                  {nft.name}
+                </h3>
+                <p className='text-gray-400 text-sm'>{nft.symbol}</p>
+                <p className='text-gray-500 text-xs mt-1 break-all'>
+                  {nft.mintAddress}
+                </p>
               </div>
             )}
 
-            <div className="mb-6">
-              <label htmlFor="price" className="block text-gray-300 text-sm font-medium mb-2">
+            <div className='mb-6'>
+              <label
+                htmlFor='price'
+                className='block text-gray-300 text-sm font-medium mb-2'
+              >
                 Selling Price (ETH)
               </label>
               <input
-                type="number"
-                id="price"
+                type='number'
+                id='price'
                 value={price}
                 onChange={handlePriceChange}
-                placeholder="e.g., 0.5 ETH"
+                placeholder='e.g., 0.5 ETH'
                 className={`w-full p-3 bg-gray-700 text-white rounded-md border focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none
                   ${errors.price ? 'border-red-500' : 'border-gray-600'}`}
-                step="0.0001"
-                min="0"
+                step='0.0001'
+                min='0'
                 required
                 disabled={isProcessing}
               />
-              {errors.price && <p className="text-red-400 mt-1 ml-2 text-xs mb-1">{errors.price}</p>}
+              {errors.price && (
+                <p className='text-red-400 mt-1 ml-2 text-xs mb-1'>
+                  {errors.price}
+                </p>
+              )}
             </div>
 
             <motion.button

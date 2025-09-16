@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { FaSpinner , FaSearch , FaArrowCircleDown } from 'react-icons/fa';
+import { FaSpinner, FaSearch, FaArrowCircleDown } from 'react-icons/fa';
 import { getAllNfts } from '../api/user';
 import { Link } from 'react-router-dom';
 
@@ -12,21 +12,19 @@ const Home = () => {
   const [timeoutId, setTimeoutId] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  
-
   useEffect(() => {
-    if(timeoutId) {
+    if (timeoutId) {
       clearTimeout(timeoutId);
     }
     const timeout = setTimeout(() => {
-      console.log("search term : ",searchTerm)
+      console.log('search term : ', searchTerm);
       fetch();
       setIsSearching(true);
-      setTimeoutId(timeout)
-    }, 3000)
+      setTimeoutId(timeout);
+    }, 3000);
 
-    return () => clearTimeout(timeout)
-  }, [searchTerm])
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (isSearching) {
@@ -45,8 +43,9 @@ const Home = () => {
     error,
     refetch: fetch,
   } = useInfiniteQuery({
-    queryKey: ['nfts' ,currentPage , sortField, sortOrder],
-    queryFn: ({ pageParam = 1 }) => getAllNfts(pageParam , searchTerm , sortField , sortOrder),
+    queryKey: ['nfts', currentPage, sortField, sortOrder],
+    queryFn: ({ pageParam = 1 }) =>
+      getAllNfts(pageParam, searchTerm, sortField, sortOrder),
     getNextPageParam: (lastPage) => {
       if (lastPage.data.page < lastPage.data.totalPages) {
         return lastPage.data.page + 1;
@@ -54,50 +53,50 @@ const Home = () => {
       return undefined;
     },
     gcTime: 6000,
-    staleTime:  30000,
+    staleTime: 30000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-[50vh]">
-        <FaSpinner className="animate-spin text-4xl text-teal-400" />
+      <div className='flex justify-center items-center h-full min-h-[50vh]'>
+        <FaSpinner className='animate-spin text-4xl text-teal-400' />
       </div>
     );
   }
 
   if (isError) {
-    console.error("Error fetching NFTs:", error);
-    if( error.status === 404 ){
+    console.error('Error fetching NFTs:', error);
+    if (error.status === 404) {
       return (
-        <div className="text-center text-gray-400 py-12">
-          <p className="text-2xl font-semibold">No NFTs found.</p>
-          <p className="mt-2">Please mint some NFTs to see them here.</p>
+        <div className='text-center text-gray-400 py-12'>
+          <p className='text-2xl font-semibold'>No NFTs found.</p>
+          <p className='mt-2'>Please mint some NFTs to see them here.</p>
         </div>
       );
     }
     return (
-      <div className="text-center p-4 text-red-400">
+      <div className='text-center p-4 text-red-400'>
         <p>Error: {error.message || 'Failed to fetch NFTs'}</p>
       </div>
     );
   }
 
-  console.log("data" , data);
-  console.log("data" , data.data);
+  console.log('data', data);
+  console.log('data', data.data);
 
   // const handleSortFieldChange = (e) => {
   //   const [field, order] = e.target.value.split('_');
   //   setSortField(field);
   //   setSortOrder(order === '1' ? 1 : -1);
-  //   setCurrentPage(1); 
+  //   setCurrentPage(1);
   // };
 
   return (
-    <div className="p-8 w-full max-w-7xl mx-auto">
-      <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 text-center uppercase tracking-wider mb-10">
-        <div className="absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-screen before:animate-auto-shine-screen"></div>
+    <div className='p-8 w-full max-w-7xl mx-auto'>
+      <h1 className='text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 text-center uppercase tracking-wider mb-10'>
+        <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-screen before:animate-auto-shine-screen'></div>
         NFTs
       </h1>
 
@@ -134,41 +133,43 @@ const Home = () => {
       </div> */}
 
       {data?.pages[0]?.data?.nfts.length === 0 ? (
-        <div className="text-center text-gray-400 py-12">
-          <p className="text-2xl font-semibold">No NFTs found.</p>
-          <p className="mt-2">Please mint some NFTs to see them here.</p>
+        <div className='text-center text-gray-400 py-12'>
+          <p className='text-2xl font-semibold'>No NFTs found.</p>
+          <p className='mt-2'>Please mint some NFTs to see them here.</p>
         </div>
       ) : (
-        <div className="grid   grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className='grid   grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8'>
           {data.pages.map((page) =>
             page.data.nfts.map((nft) => (
               <Link
                 to={`/nft-detail/${nft._id}`}
                 key={nft._id}
-                className="relative bg-gray-800/80 rounded-2xl overflow-hidden shadow-lg border border-gray-700 transform transition-transform duration-300 hover:scale-105 hover:border-teal-500"
+                className='relative bg-gray-800/80 rounded-2xl overflow-hidden shadow-lg border border-gray-700 transform transition-transform duration-300 hover:scale-105 hover:border-teal-500'
               >
-                <div className="absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-full before:animate-auto-shine"></div>
+                <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-full before:animate-auto-shine'></div>
 
-                <div className="w-full h-56 bg-gray-900 flex items-center justify-center overflow-hidden">
+                <div className='w-full h-56 bg-gray-900 flex items-center justify-center overflow-hidden'>
                   <img
                     src={nft.sImageUrl}
                     alt={nft.sNftName}
-                    className="w-full h-full object-cover"
+                    className='w-full h-full object-cover'
                   />
                 </div>
-                <div className="p-4 space-y-2">
-                  <h3 className="text-lg font-bold text-gray-200 truncate">
+                <div className='p-4 space-y-2'>
+                  <h3 className='text-lg font-bold text-gray-200 truncate'>
                     {nft.sNftName}{' '}
-                    <span className="text-sm text-gray-400">#{nft.nTokenId}</span>
+                    <span className='text-sm text-gray-400'>
+                      #{nft.nTokenId}
+                    </span>
                   </h3>
-                  <p className="text-sm font-medium text-gray-400 truncate">
-                    Creator : 
-                    {nft.sFirstMInterAddress.slice(0, 4)}...{nft.sFirstMInterAddress.slice(-4)}
+                  <p className='text-sm font-medium text-gray-400 truncate'>
+                    Creator :{nft.sFirstMInterAddress.slice(0, 4)}...
+                    {nft.sFirstMInterAddress.slice(-4)}
                   </p>
                 </div>
 
                 {nft.isApprovedForSale === true && (
-                  <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                  <div className='absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg'>
                     OnSale
                   </div>
                 )}
@@ -179,11 +180,11 @@ const Home = () => {
       )}
 
       {hasNextPage && (
-        <div className="flex justify-center mt-12">
+        <div className='flex justify-center mt-12'>
           <button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="px-8 py-3 bg-teal-600 text-white rounded-full font-semibold shadow-lg transition duration-300 hover:bg-teal-700 hover:shadow-xl disabled:bg-gray-700 disabled:cursor-not-allowed transform hover:scale-105"
+            className='px-8 py-3 bg-teal-600 text-white rounded-full font-semibold shadow-lg transition duration-300 hover:bg-teal-700 hover:shadow-xl disabled:bg-gray-700 disabled:cursor-not-allowed transform hover:scale-105'
           >
             {isFetchingNextPage ? 'Loading...' : 'Load More'}
           </button>
