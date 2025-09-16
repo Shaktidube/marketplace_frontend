@@ -15,7 +15,7 @@ import SellModal from "../components/SellModal";
 import { BrowserProvider, Contract } from "ethers";
 import { useAppKitProvider } from "@reown/appkit/react";
 import { FaSpinner } from "react-icons/fa";
-import tokenAbi from "../../tokenAbi.json";
+import tokenAbi from "../utils/abis/tokenAbi.json";
 
 const queryKey = {
   nftDetail : (nftId) => ["nftDetail", nftId], 

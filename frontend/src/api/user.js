@@ -11,33 +11,33 @@ export const connectWalletApi = async (sWalletAddress) => {
   return response.data;
 };
 
-export const verifyEmail = async (sWalletAddress, sEmail) => {
-  console.log("sending to api ", sWalletAddress, sEmail);
+export const verifyEmail = async (payload) => {
+  console.log("sending to api ", payload.sWalletAddress, payload.sEmail);
   const response = await apiClient({
     method: "PUT",
     url: "/verify-email",
-    data: { sWalletAddress, sEmail },
+    data: {sWalletAddress: payload.sWalletAddress, sEmail: payload.sEmail},
   });
   return response.data;
 };
 
-export const verifyOtp = async (sWalletAddress, sEmail, nOtp) => {
-  console.log("sending to api ", sWalletAddress, sEmail, nOtp);
+export const verifyOtp = async (payload) => {
+  console.log("sending to api ", payload.sWalletAddress, payload.sEmail, payload.nOtp);
   const response = await apiClient({
     method: "PUT",
     url: "/verify-otp",
-    data: { sWalletAddress, sEmail, nOtp },
+    data: { sWalletAddress: payload.sWalletAddress, sEmail: payload.sEmail, nOtp: payload.nOtp },
   });
   return response.data;
 };
 
-export const resendOtp = async (sWalletAddress, sEmail) => {
-  console.log("Resending OTP for wallet address:", sWalletAddress);
-  console.log("Resending OTP for email:", sEmail);
+export const resendOtp = async (payload) => {
+  console.log("Resending OTP for wallet address:", payload.sWalletAddress);
+  console.log("Resending OTP for email:", payload.sEmail);
   const response = await apiClient({
     method: "PATCH",
     url: "/resend-otp",
-    data: { sWalletAddress, sEmail },
+    data: { sWalletAddress: payload.sWalletAddress, sEmail: payload.sEmail },
   });
   return response.data;
 };

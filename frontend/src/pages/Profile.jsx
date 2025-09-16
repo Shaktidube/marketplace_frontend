@@ -224,6 +224,7 @@ const Profile = () => {
                   type="text"
                   value={newUsername}
                   onChange={handleUsernameChange}
+                  maxLength={12}
                   className={`text-white bg-gray-700/50 rounded-lg p-2 text-xl font-bold w-full max-w-[200px] text-center ${usernameError ? 'border-2 border-red-500' : ''}`}
                   disabled={isUsernameUpdating}
                 />

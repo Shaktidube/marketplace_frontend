@@ -1,7 +1,7 @@
 import { BrowserProvider, Contract, ethers } from "ethers";
 import toast from "react-hot-toast";
-import abi from "../../abi.json";
-import tokenAbi from "../../tokenAbi.json";
+import abi from "./abis/abi.json";
+import tokenAbi from "./abis/tokenAbi.json";
 import { useEffect } from "react";
 
 

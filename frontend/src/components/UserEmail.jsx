@@ -19,8 +19,7 @@ const UserEmail = ({ sWalletAddress }) => {
   const user = useSelector((state) => state.auth.user);
 
   const { mutate: mutateVerifyEmail , isPending: isPendingVerifyingEmail } = useMutation({
-    mutationFn: (payload) =>
-      verifyEmail(payload.sWalletAddress, payload.sEmail),
+    mutationFn: (payload) =>verifyEmail(payload),
     onSuccess: (data) => {
       
       showToast("OTP sent to your email!", "success");
@@ -264,6 +263,7 @@ const handleUsernameChange = (e) => {
           <input
             type="text"
             value={sUsername}
+            maxLength={12}
             onChange={handleUsernameChange}
             className="mt-2 p-2 w-full bg-gray-700 text-white rounded"
             placeholder="Choose a username"

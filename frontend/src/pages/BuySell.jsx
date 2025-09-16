@@ -61,7 +61,6 @@ const BuySell = () => {
       const result = await handleBuyNFt(nft, walletProvider);
       if (result && result.success) {
         console.log("Buying process completed");
-        // await delay(10000);
         navigate('/profile');
       }
     } catch (error) {

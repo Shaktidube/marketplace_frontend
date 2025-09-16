@@ -48,7 +48,6 @@ const authSlice = createSlice({
             Cookies.remove('userToken');
             socket.disconnect();
             console.log("User disconnected, token removed from local storage");
-            // window.location.reload();
         },
     }
 });

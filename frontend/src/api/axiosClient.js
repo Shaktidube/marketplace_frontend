@@ -23,7 +23,8 @@ export const apiClient = async (options) => {
     const response = await client(options);
     return response;
   } catch (error) {
-    console.error("API Client Error:",  error);
+    console.log("error" , error);
+    console.error("API Client Error:",error.response ,  error);
     throw error.response;
   }
 };
