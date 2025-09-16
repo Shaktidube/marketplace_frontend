@@ -3,6 +3,8 @@ import AppRoutes from './routes/routes';
 import NavBar from './components/NavBar';
 
 const App = () => {
+  const name = "testHuskyHooks";
+  const TestHusky = 'huskyy';
   return (
     <div className='bg-black min-h-screen backdrop-blur-lg flex flex-col'>
       <NavBar />
