@@ -68,7 +68,7 @@ const NavBar = () => {
     socket.on('NftTransferFromContract', (data) => {
       console.log('NftTransferFromContract received:', data);
       invalidateQueries(queryClient);
-      showToast('NFT transferred successfully!', 'success');
+      showToast('NFT Minted successfully!', 'success');
       navigate('/profile');
     });
 
@@ -89,15 +89,28 @@ const NavBar = () => {
       console.log("AuctionStartedEventDetected received:", data);
       invalidateQueries(queryClient);
       showToast("Auction started successfully!", "success");
-      navigate("/buy-sell");
+      navigate("/home");
     });
 
     socket.on("NewBidPlacedEventDetected" , (data) => {
       console.log("NewBidPlacedEventDetected received:", data);
       invalidateQueries(queryClient);
       showToast("Bid placed successfully!", "success");
+    });
 
-    })
+    socket.on("ClaimNftEventDetected" , (data) => {
+      console.log("ClaimNft received:", data);
+      invalidateQueries(queryClient);
+      showToast("NFT Owner claimed successfully!", "success");
+      navigate("/profile");
+    });
+
+    socket.on("ReClaimNftEventDetected" , (data) => {
+      console.log("ReClaimNft received:", data);
+      invalidateQueries(queryClient);
+      showToast("NFT reclaimed successfully!", "success");
+      navigate("/profile");
+    });
 
     return () => {
       socket.off('TransferEventDetected');
@@ -108,6 +121,8 @@ const NavBar = () => {
       socket.off('BurnEventDetected');
       socket.off('AuctionStartedEventDetected');
       socket.off('NewBidPlacedEventDetected');
+      socket.off('ClaimNftEventDetected');
+      socket.off('ReClaimNftEventDetected');
     };
   }, [user.sWalletAddress, navigate]);
 

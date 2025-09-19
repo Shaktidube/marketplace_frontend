@@ -20,12 +20,14 @@ const backdropVariants = {
 };
 
 // Add isProcessing prop
-const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction, isProcessing }) => {
+const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction }) => {
   const [initialPrice, setInitialPrice] = useState('');
   const [durationSeconds, setDurationSeconds] = useState('100');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [errors, setErrors] = useState({});
+  const [isProcessing, setIsProcessing] = useState(false);
+  
 
   // Reset form fields and errors when modal opens
   useEffect(() => {
@@ -43,6 +45,8 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction, isProcessing }) 
 
     switch (fieldName) {
       case "initialPrice":
+        const decimalIndex = value.indexOf('.');
+        const decimalPart = value.slice(decimalIndex + 1);
         if (!value.trim()) {
           error = "Initial price is required.";
         } else {
@@ -55,6 +59,8 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction, isProcessing }) 
               error = "Invalid price. Please enter a number.";
             } else if (parsedPrice <= 0) {
               error = "Price must be greater than zero.";
+            } else if(decimalPart.length > 3) {
+              error = "Price can have at most 3 decimal places (e.g., 0.123 ETH).";
             }
           }
         }
@@ -68,21 +74,27 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction, isProcessing }) 
           // Give a small grace period for current time, e.g., 5 seconds
           if (value.getTime() < Date.now() - (5 * 1000)) { 
             error = "Start date/time cannot be in the past.";
+          } else if (value.getTime() <= startDate.getTime()) {
+            error = "End date/time must be after start date/time.";
+          } else if (value.getTime() - startDate.getTime() < 5 * 60 * 1000) { // Minimum 5 minutes
+            error = "Auction duration must be at least 5 minutes.";
           }
         }
         break;
 
-      case "startDate":
-        // Value here is a Date object, not a string
-        if (!value) {
-          error = "Start date and time is required.";
-        } else {
-          // Give a small grace period for current time, e.g., 5 seconds
-          if (value.getTime() < Date.now() - (5 * 1000)) { 
-            error = "Start date/time cannot be in the past.";
+        case "startDate":
+          // Value here is a Date object, not a string
+          if (!value) {
+            error = "Start date and time is required.";
+          } else {
+            // Give a small grace period for current time, e.g., 5 seconds
+            if (value.getTime() < Date.now() - (5 * 1000)) { 
+              error = "Start date/time cannot be in the past.";
+            } else if (value.getTime() < Date.now() + 5 * 60 * 1000) {
+              error = "Please select a start time at least 5 minutes from now.";
+            } 
           }
-        }
-        break;
+          break;
 
       default:
         break;
@@ -118,12 +130,13 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction, isProcessing }) 
 
     const parsedInitialPrice = ethers.parseEther(initialPrice);
     console.log("Parsed Initial Price in Wei: ", parsedInitialPrice.toString());
-    const parsedDurationSeconds = parseInt(durationSeconds);
 
     const auctionStartTime = Math.floor(startDate.getTime() / 1000);
     const auctionEndTime = Math.floor(endDate.getTime() / 1000);
 
     // onConfirmAuction will handle its own loading and closing
+    setIsProcessing(true);
+
     onConfirmAuction(nft, parsedInitialPrice.toString(), auctionStartTime, auctionEndTime);
     // Do NOT call onClose() here. Let onConfirmAuction (in BuySell.js) decide when to close
     // based on the transaction outcome (success/failure).

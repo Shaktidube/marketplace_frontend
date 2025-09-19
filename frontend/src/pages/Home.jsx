@@ -166,6 +166,19 @@ const Home = () => {
                     Creator :{nft.sFirstMInterAddress.slice(0, 4)}...
                     {nft.sFirstMInterAddress.slice(-4)}
                   </p>
+                  {nft.isApprovedForAuction && (
+                    <div className="">
+                      {nft.oAuctionDetails.nHighestBid > 0 ? (
+                        <p className='text-sm text-yellow-400 font-semibold'>
+                          Current Bid: {nft.oAuctionDetails.nHighestBid} ETH
+                        </p>
+                      ) : (
+                        <p className='text-sm text-gray-400'>
+                          Starting Bid: {nft.oAuctionDetails.nBasePrice} ETH
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {nft.isApprovedForAuction ? (

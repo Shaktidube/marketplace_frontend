@@ -179,6 +179,7 @@ export const cancelListing = async (nft, walletProvider) => {
   }
 };
 
+
 export const invalidateQueries = (queryClient) => {
   queryClient.invalidateQueries(['profile']);
   queryClient.invalidateQueries(['buy-nfts']);
