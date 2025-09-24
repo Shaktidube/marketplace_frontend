@@ -86,6 +86,8 @@ const MintNft = () => {
       formData.sNftName.trim().length > 12
     ) {
       newErrors.sNftName = 'NFT Name must be between 1 and 12 characters';
+    } else if(!/^[a-zA-Z0-9 ]+$/.test(formData.sNftName.trim())) {
+      newErrors.sNftName = 'NFT Name can only contain letters, numbers, and spaces';
     }
 
     // Royalty validation
@@ -215,6 +217,8 @@ const MintNft = () => {
           cleanedValue.trim().length > 100
         ) {
           newErrors.sNftName = 'NFT Name must be between 1 and 100 characters';
+        } else if(!/^[A-Za-z](?:[A-Za-z0-9]|(?<![_\-.\s])[_\-.\s](?![_\-.\s])){0,48}[A-Za-z0-9]$|^[A-Za-z]$/.test(cleanedValue.trim())) {
+          newErrors.sNftName = 'NFT Name can only contain letters, numbers, and spaces';
         }
         break;
 

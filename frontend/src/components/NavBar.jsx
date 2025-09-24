@@ -55,7 +55,6 @@ const NavBar = () => {
       console.log('ListedEventDetected');
       invalidateQueries(queryClient);
       showToast('listed nft is now available!', 'success');
-      navigate('/buy-sell');
     });
 
     socket.on('BuySuccessEventDetected', (data) => {

@@ -74,7 +74,7 @@ const ConnectWallet = () => {
           sUserProfileImage,
         })
       );
-      navigate('/buy-sell');
+      navigate('/home');
       showToast('Wallet connected successfully!', 'success');
     },
     onError: (error) => {

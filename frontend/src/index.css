@@ -40,4 +40,5 @@
 
 .before\:animate-auto-shine::before {
   animation: auto-shine 2s ease-in-out 2s infinite;
+  animation-delay: calc(var(--animation-start) * -1ms);
 }

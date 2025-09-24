@@ -12,16 +12,16 @@ const ListForSell = () => {
     sTokenAddress: '',
     nTokenId: '',
     nPrice: '',
-    listingType: 'sale', // Default to sale
-    nDuration: '', // Duration in hours for auction
+    listingType: 'sale', 
+    startDate: '',
+    endDate: '',
   });
   const [errors, setErrors] = useState({});
   const { walletProvider } = useAppKitProvider('eip155');
   const navigate = useNavigate();
-    const [startDate, setStartDate] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date());
-      const [isProcessing, setIsProcessing] = useState(false);
-    
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const validatePrice = (value) => {
     if (!value.trim()) {
@@ -41,42 +41,46 @@ const ListForSell = () => {
         return 'Price can have at most 3 decimal places (e.g., 0.123 ETH).';
       }
     }
+    if (parsedPrice > 1000000) {
+      return 'Price seems too high. Please enter a reasonable amount.';
+    }
+    
     return '';
   };
 
   const validateField = (fieldName, value) => {
-    let error = "";
+    let error = '';
 
     switch (fieldName) {
-      case "endDate":
+      case 'endDate':
         // Value here is a Date object, not a string
         if (!value) {
-          error = "Start date and time is required.";
+          error = 'Start date and time is required.';
         } else {
-          // Give a small grace period for current time, e.g., 5 seconds
-          if (value.getTime() < Date.now() - (5 * 1000)) { 
-            error = "Start date/time cannot be in the past.";
+          if (value.getTime() < Date.now() - 5 * 1000) {
+            error = 'Start date/time cannot be in the past.';
           } else if (value.getTime() <= startDate.getTime()) {
-            error = "End date/time must be after start date/time.";
-          } else if (value.getTime() - startDate.getTime() < 5 * 60 * 1000) { // Minimum 5 minutes
-            error = "Auction duration must be at least 5 minutes.";
+            error = 'End date/time must be after start date/time.';
+          } else if (value.getTime() - startDate.getTime() < 5 * 60 * 1000) {
+            // Minimum 5 minutes
+            error = 'Auction duration must be at least 5 minutes.';
           }
         }
         break;
 
-        case "startDate":
-          // Value here is a Date object, not a string
-          if (!value) {
-            error = "Start date and time is required.";
-          } else {
-            // Give a small grace period for current time, e.g., 5 seconds
-            if (value.getTime() < Date.now() - (5 * 1000)) { 
-              error = "Start date/time cannot be in the past.";
-            } else if (value.getTime() < Date.now() + 5 * 60 * 1000) {
-              error = "Please select a start time at least 5 minutes from now.";
-            } 
+      case 'startDate':
+        // Value here is a Date object, not a string
+        if (!value) {
+          error = 'Start date and time is required.';
+        } else {
+          // Give a small grace period for current time, e.g., 5 seconds
+          if (value.getTime() < Date.now() - 5 * 1000) {
+            error = 'Start date/time cannot be in the past.';
+          } else if (value.getTime() < Date.now() + 5 * 60 * 1000) {
+            error = 'Please select a start time at least 5 minutes from now.';
           }
-          break;
+        }
+        break;
 
       default:
         break;
@@ -115,6 +119,12 @@ const ListForSell = () => {
       newErrors.listingType = 'Please select a valid listing type';
     }
 
+    //startDate and endDate validation for auction
+    if (formData.listingType === 'auction') {
+      newErrors.startDate = validateField('startDate', startDate);
+      newErrors.endDate = validateField('endDate', endDate);
+    }
+
     setErrors(newErrors);
     return Object.values(newErrors).every((error) => !error);
   };
@@ -130,7 +140,8 @@ const ListForSell = () => {
 
     setIsListing(true);
     try {
-      const { contract: marketplace, signer } = await getContractInstance(walletProvider);
+      const { contract: marketplace, signer } =
+        await getContractInstance(walletProvider);
       const nftContract = new Contract(
         formData.sTokenAddress,
         erc721Abi,
@@ -157,6 +168,8 @@ const ListForSell = () => {
         await sellTx.wait();
         console.log('NFT LISTED FOR SALE');
         showToast('NFT listed for sale successfully!', 'success');
+        navigate('/buy-sell');
+
       } else {
         console.log('Listing on marketplace for auction...');
         // const durationInSeconds = parseInt(formData.nDuration) * 3600; // Convert hours to seconds
@@ -173,11 +186,10 @@ const ListForSell = () => {
           tokenId,
           startDateUnix,
           endDateUnix,
-          priceInWei,
+          priceInWei
         );
         await auctionTx.wait();
         console.log('NFT LISTED FOR AUCTION');
-        showToast('NFT listed for auction successfully!', 'success');
       }
 
       setFormData({
@@ -185,23 +197,33 @@ const ListForSell = () => {
         nTokenId: '',
         nPrice: '',
         listingType: 'sale',
-        startDate:'',
-        endDate:''
+        startDate: '',
+        endDate: '',
       });
-      navigate('/buy-sell');
     } catch (error) {
       console.error('Error listing NFT:', error);
       let errorMessage =
         'Failed to list NFT. Please check inputs and try again.';
       if (error.code === 'ACTION_REJECTED') {
         errorMessage = 'Transaction rejected by user.';
-      } else if (error.reason === 'Market: Token Already Listed') {
-        errorMessage = 'Token is already listed for sale or auction.';
+      } else if (
+        error.reason === 'Market: Token Already Listed' ||
+        error.reason === 'Market : Token already listed'
+      ) {
+        errorMessage = 'Token already listed for sale or auction.';
       } else if (error.code === 'CALL_EXCEPTION') {
         errorMessage = 'CALL_EXCEPTION!! Contract error occurred.';
       }
       showToast(errorMessage, 'error');
     } finally {
+      setFormData({
+        sTokenAddress: '',
+        nTokenId: '',
+        nPrice: '',
+        listingType: 'sale',
+        startDate: '',
+        endDate: '',
+      });
       setIsListing(false);
     }
   };
@@ -222,9 +244,7 @@ const ListForSell = () => {
       if (parts.length === 2 && parts[1].length > 3) {
         cleanedValue = parts[0] + '.' + parts[1].slice(0, 3);
       }
-    } else if (name === 'nDuration') {
-      cleanedValue = value.replace(/[^0-9]/g, ''); // Only allow numbers
-    }
+    } 
 
     setFormData((prevFormData) => ({ ...prevFormData, [name]: cleanedValue }));
 
@@ -258,11 +278,6 @@ const ListForSell = () => {
           newErrors.listingType = 'Please select a valid listing type';
         }
         break;
-      case 'nDuration':
-        if (formData.listingType === 'auction') {
-          newErrors.nDuration = validateDuration(cleanedValue);
-        }
-        break;
       default:
         break;
     }
@@ -270,125 +285,128 @@ const ListForSell = () => {
   };
 
   return (
-    <div className="">
+    <div className=''>
       {isListing && (
-        <div className="fixed inset-0 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm z-50">
-          <div className="flex flex-col items-center p-8 rounded-lg shadow-2xl animate-pulse">
-            <FaSpinner className="text-6xl text-teal-500 animate-spin mb-4" />
-            <p className="text-xl font-semibold text-gray-100">
+        <div className='fixed inset-0 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm z-50'>
+          <div className='flex flex-col items-center p-8 rounded-lg shadow-2xl animate-pulse'>
+            <FaSpinner className='text-6xl text-teal-500 animate-spin mb-4' />
+            <p className='text-xl font-semibold text-gray-100'>
               Listing NFT...
             </p>
-            <p className="text-sm text-gray-100 mt-2">
+            <p className='text-sm text-gray-100 mt-2'>
               This may take a moment.
             </p>
           </div>
         </div>
       )}
 
-      <div className="w-full max-w-md p-8 rounded-xl shadow-2xl bg-gray-950/60 backdrop-blur-lg border border-white/20">
-        <h2 className="text-3xl font-extrabold text-gray-200 mb-6 text-center">
+      <div className='w-full max-w-md p-8 rounded-xl shadow-2xl bg-gray-950/60 backdrop-blur-lg border border-white/20'>
+        <h2 className='text-3xl font-extrabold text-gray-200 mb-6 text-center'>
           List NFT for Sale or Auction
         </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className='space-y-6'>
           {/* Listing Type */}
           <div>
             <label
-              htmlFor="listingType"
-              className="block text-sm font-medium text-gray-200"
+              htmlFor='listingType'
+              className='block text-sm font-medium text-gray-200'
             >
               Listing Type
             </label>
             <select
-              id="listingType"
-              name="listingType"
+              id='listingType'
+              name='listingType'
               value={formData.listingType}
               onChange={handleChange}
               className={`w-full px-4 py-3 mt-1 bg-gray-700/50 border rounded-lg shadow-inner focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 text-gray-200 ${
                 errors.listingType ? 'border-red-500' : 'border-gray-600'
               }`}
             >
-              <option value="sale">Sale</option>
-              <option value="auction">Auction</option>
+              <option value='sale'>Sale</option>
+              <option value='auction'>Auction</option>
             </select>
             {errors.listingType && (
-              <p className="text-red-400 text-xs mt-2">{errors.listingType}</p>
+              <p className='text-red-400 text-xs mt-2'>{errors.listingType}</p>
             )}
           </div>
 
           {/* Token Address */}
           <div>
             <label
-              htmlFor="sTokenAddress"
-              className="block text-sm font-medium text-gray-200"
+              htmlFor='sTokenAddress'
+              className='block text-sm font-medium text-gray-200'
             >
               Token Address (NFT Contract)
             </label>
             <input
-              type="text"
-              id="sTokenAddress"
-              name="sTokenAddress"
+              type='text'
+              id='sTokenAddress'
+              name='sTokenAddress'
               value={formData.sTokenAddress}
               onChange={handleChange}
               className={`w-full px-4 py-3 mt-1 bg-gray-700/50 border rounded-lg shadow-inner focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 text-gray-200 placeholder-gray-500 ${
                 errors.sTokenAddress ? 'border-red-500' : 'border-gray-600'
               }`}
-              placeholder="0x... (Enter NFT contract address)"
+              placeholder='0x... (Enter NFT contract address)'
             />
             {errors.sTokenAddress && (
-              <p className="text-red-400 text-xs mt-2">{errors.sTokenAddress}</p>
+              <p className='text-red-400 text-xs mt-2'>
+                {errors.sTokenAddress}
+              </p>
             )}
           </div>
 
           {/* Token ID */}
           <div>
             <label
-              htmlFor="nTokenId"
-              className="block text-sm font-medium text-gray-200"
+              htmlFor='nTokenId'
+              className='block text-sm font-medium text-gray-200'
             >
               Token ID
             </label>
             <input
-              type="number"
-              id="nTokenId"
-              name="nTokenId"
+              type='number'
+              id='nTokenId'
+              name='nTokenId'
               value={formData.nTokenId}
               onChange={handleChange}
-              min="0"
+              min='0'
               className={`w-full px-4 py-3 mt-1 bg-gray-700/50 border rounded-lg shadow-inner focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 text-gray-200 placeholder-gray-500 ${
                 errors.nTokenId ? 'border-red-500' : 'border-gray-600'
               }`}
-              placeholder="Enter NFT Token ID (e.g., 1)"
+              placeholder='Enter NFT Token ID (e.g., 1)'
             />
             {errors.nTokenId && (
-              <p className="text-red-400 text-xs mt-2">{errors.nTokenId}</p>
+              <p className='text-red-400 text-xs mt-2'>{errors.nTokenId}</p>
             )}
           </div>
 
           {/* Price */}
           <div>
             <label
-              htmlFor="nPrice"
-              className="block text-sm font-medium text-gray-200"
+              htmlFor='nPrice'
+              className='block text-sm font-medium text-gray-200'
             >
-              {formData.listingType === 'sale' ? 'Price' : 'Starting Bid'} (in ETH)
+              {formData.listingType === 'sale' ? 'Price' : 'Starting Bid'} (in
+              ETH)
             </label>
             <input
-              type="number"
-              id="nPrice"
-              name="nPrice"
+              type='number'
+              id='nPrice'
+              name='nPrice'
               value={formData.nPrice}
               onChange={handleChange}
-              step="0.001"
-              min="0.001"
+              step='0.001'
+              min='0.001'
               className={`w-full px-4 py-3 mt-1 bg-gray-700/50 border rounded-lg shadow-inner focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-300 text-gray-200 placeholder-gray-500 ${
                 errors.nPrice ? 'border-red-500' : 'border-gray-600'
               }`}
-              placeholder="e.g., 0.123 ETH (max 3 decimals)"
+              placeholder='e.g., 0.123 ETH (max 3 decimals)'
             />
             {errors.nPrice && (
-              <p className="text-red-400 text-xs mt-2">{errors.nPrice}</p>
+              <p className='text-red-400 text-xs mt-2'>{errors.nPrice}</p>
             )}
-            <p className="text-gray-500 text-xs mt-1">
+            <p className='text-gray-500 text-xs mt-1'>
               Max 3 decimal places (e.g., 0.123 ETH)
             </p>
           </div>
@@ -397,66 +415,84 @@ const ListForSell = () => {
           {formData.listingType === 'auction' && (
             <div>
               <div className='mb-4'>
-                <label htmlFor='startDate' className='block text-gray-300 text-sm font-semibold mb-2'>
+                <label
+                  htmlFor='startDate'
+                  className='block text-gray-300 text-sm font-semibold mb-2'
+                >
                   Auction Start Date & Time
                 </label>
                 <DatePicker
                   selected={startDate}
                   onChange={(date) => {
                     setStartDate(date);
-                    setErrors(prevErrors => ({ ...prevErrors, startDate: validateField("startDate", date) }));
+                    setErrors((prevErrors) => ({
+                      ...prevErrors,
+                      startDate: validateField('startDate', date),
+                    }));
                   }}
                   showTimeSelect // Enable time selection
-                  dateFormat="Pp"
-                  timeFormat="HH:mm"
+                  dateFormat='Pp'
+                  timeFormat='HH:mm'
                   timeIntervals={15}
-                  minDate={new Date() }
+                  minDate={new Date()}
                   className={`w-full p-3 text-white rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 custom-datepicker-input
-                    ${errors.startDate ? "bg-red-900 border-red-500" : "bg-gray-800 border-gray-700"}`} 
-                  wrapperClassName="custom-datepicker-wrapper"
-                  popperPlacement="top-end"
+                    ${errors.startDate ? 'bg-red-900 border-red-500' : 'bg-gray-800 border-gray-700'}`}
+                  wrapperClassName='custom-datepicker-wrapper'
+                  popperPlacement='top-end'
                   disabled={isProcessing}
                 />
                 {errors.startDate && (
-                  <p className="text-red-400 mt-1 ml-2 text-xs mb-1">{errors.startDate}</p>
+                  <p className='text-red-400 mt-1 ml-2 text-xs mb-1'>
+                    {errors.startDate}
+                  </p>
                 )}
               </div>
 
               <div className='mb-4'>
-                <label htmlFor='endDate' className='block text-gray-300 text-sm font-semibold mb-2'>
+                <label
+                  htmlFor='endDate'
+                  className='block text-gray-300 text-sm font-semibold mb-2'
+                >
                   Auction End Date & Time
                 </label>
                 <DatePicker
                   selected={endDate}
                   onChange={(date) => {
                     setEndDate(date);
-                    setErrors(prevErrors => ({ ...prevErrors, endDate: validateField("endDate", date) }));
+                    setErrors((prevErrors) => ({
+                      ...prevErrors,
+                      endDate: validateField('endDate', date),
+                    }));
                   }}
-                  showTimeSelect 
-                  dateFormat="Pp"
-                  timeFormat="HH:mm"
+                  showTimeSelect
+                  dateFormat='Pp'
+                  timeFormat='HH:mm'
                   timeIntervals={15}
                   minDate={new Date()}
                   className={`w-full p-3 text-white rounded-lg border focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 custom-datepicker-input
-                    ${errors.endDate ? "bg-red-900 border-red-500" : "bg-gray-800 border-gray-700"}`} 
-                  wrapperClassName="custom-datepicker-wrapper"
-                  popperPlacement="top-end"
-                  disabled={isProcessing} 
+                    ${errors.endDate ? 'bg-red-900 border-red-500' : 'bg-gray-800 border-gray-700'}`}
+                  wrapperClassName='custom-datepicker-wrapper'
+                  popperPlacement='top-end'
+                  disabled={isProcessing}
                 />
                 {errors.endDate && (
-                  <p className="text-red-400 mt-1 ml-2 text-xs mb-1">{errors.endDate}</p>
+                  <p className='text-red-400 mt-1 ml-2 text-xs mb-1'>
+                    {errors.endDate}
+                  </p>
                 )}
               </div>
             </div>
           )}
 
           <button
-            type="submit"
+            type='submit'
             disabled={isListing || Object.values(errors).some(Boolean)}
-            className="w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-blue-700 text-white font-bold rounded-lg shadow-lg hover:from-teal-700 hover:to-blue-800 transition duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            className='w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-blue-700 text-white font-bold rounded-lg shadow-lg hover:from-teal-700 hover:to-blue-800 transition duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed'
           >
-            {isListing && <FaSpinner className="animate-spin" />}
-            {isListing ? 'Listing...' : `List NFT for ${formData.listingType === 'sale' ? 'Sale' : 'Auction'}`}
+            {isListing && <FaSpinner className='animate-spin' />}
+            {isListing
+              ? 'Listing...'
+              : `List NFT for ${formData.listingType === 'sale' ? 'Sale' : 'Auction'}`}
           </button>
         </form>
       </div>

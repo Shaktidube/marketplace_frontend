@@ -158,7 +158,7 @@ const UserEmail = ({ sWalletAddress }) => {
     setOtp('');
   };
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^(?!.*\.\.)[a-zA-Z0-9](?:[a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+$/;
 
   const handleEmailChange = (e) => {
     const newEmail = e.target.value;
@@ -184,14 +184,18 @@ const UserEmail = ({ sWalletAddress }) => {
     }
   };
   const handleUsernameChange = (e) => {
-    const value = e.target.value;
-    if (/\s/.test(value)) {
-      setUsernameError('Username cannot contain spaces.');
-    } else {
-      setUsernameError('');
-    }
-    setUsername(value);
-  };
+  const value = e.target.value;
+
+  const usernameRegex = /^(?!.*\s)[a-zA-Z][a-zA-Z0-9_]{1,28}[a-zA-Z0-9]$/;
+
+  if (!usernameRegex.test(value)) {
+    setUsernameError('Username is not valid.');
+  } else {
+    setUsernameError('');
+  }
+
+  setUsername(value);
+};
 
   return (
     <div className='text-white max-w-md mx-auto bg-gray-800 backdrop-blur-lg p-6 rounded-lg shadow-lg'>

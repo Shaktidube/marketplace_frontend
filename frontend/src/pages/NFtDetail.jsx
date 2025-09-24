@@ -39,14 +39,12 @@ const NFtDetail = () => {
   const [selectedNftForBid, setSelectedNftForBid] = useState(null);
   const [bidAmountInput, setBidAmountInput] = useState('');
   const [minimumBidRequiredEth, setMinimumBidRequiredEth] = useState(0);
-  const [status, setStatus] = useState('');
   const [isBidding, setIsBidding] = useState(false);
   const [isReclaiming, setIsReclaiming] = useState(false);
   const [isClaimingNft, setIsClaimingNft] = useState(false);
-  const [isSettle , setIsSettle] = useState(false);
+  const [isSettle, setIsSettle] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  console.log('nftId from params:', nftId);
+  const [auctionStatus, setAuctionStatus] = useState('upcoming');
 
   const { data } = useQuery({
     queryKey: queryKey.nftDetail(nftId),
@@ -67,19 +65,17 @@ const NFtDetail = () => {
 
   const handlePlaceBidClick = useCallback((nft) => {
     try {
-      
       setSelectedNftForBid(nft);
       setIsBidModalOpen(true);
-  
+
       const minimumREquiredBid =
         nft.oAuctionDetails.nHighestBid > 0
           ? parseFloat(nft.oAuctionDetails.nHighestBid) * 1.0001
           : parseFloat(nft.oAuctionDetails.nBasePrice);
       setMinimumBidRequiredEth(minimumREquiredBid);
     } catch (error) {
-      setSelectedNftForBid("");
+      setSelectedNftForBid('');
       setIsBidModalOpen(false);
-      
     }
   }, []);
 
@@ -256,6 +252,8 @@ const NFtDetail = () => {
         showToast('NFT is already listed in auction or sale', 'error');
       }
       console.log('error code : ', error.code);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -306,9 +304,10 @@ const NFtDetail = () => {
       }
       throw error;
     } finally {
+      setIsBidModalOpen(false);
+      setSelectedNftForBid('');
       setIsBidding(false);
-      setIsProcessing(true);
-
+      setIsProcessing(false);
     }
   };
 
@@ -436,13 +435,14 @@ const NFtDetail = () => {
     tokenId: nft.nTokenId,
   };
 
-  const { dStartTime, dEndTime, sSettlementTime, nHighestBid, sHighestBidder } = nft.oAuctionDetails;
+  const { dStartTime, dEndTime, sSettlementTime, nHighestBid, sHighestBidder } =
+    nft.oAuctionDetails;
   const now = Math.floor(Date.now() / 1000);
-  
-  const isAuctionActive = nft.isApprovedForAuction &&
-  parseInt(dStartTime) < now &&
-  parseInt(dEndTime) > now;
-  
+
+  // const isAuctionActive = nft.isApprovedForAuction &&
+  // parseInt(dStartTime) < now &&
+  // parseInt(dEndTime) > now;
+
   const isAuctionEnded = nft.isApprovedForAuction && parseInt(dEndTime) <= now;
   const hasBids = nft.oAuctionDetails.nHighestBid > 0;
   const isSettlementPeriod = isAuctionEnded && now > parseInt(sSettlementTime);
@@ -464,18 +464,8 @@ const NFtDetail = () => {
   //   sSettlementTime
   // );
 
-  const renderTimer = () => (
-    <CountdownTimer
-      startTime={parseInt(dStartTime)}
-      endTime={parseInt(dEndTime)}
-      settlementTime={parseInt(sSettlementTime)}
-      handleSettleAuction={handleSettleAuction}
-      nft={nft}
-    />
-  );
-
   const renderOwnerActions = () => (
-    <div className='flex space-x-4 mt-8'>
+    <div className='flex space-x-4'>
       <button
         onClick={handleSellClick}
         className='w-full px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition'
@@ -495,8 +485,17 @@ const NFtDetail = () => {
     </div>
   );
 
-  const CountdownTimer = ({ startTime, endTime, settlementTime }) => {
+  const CountdownTimer = ({
+    startTime,
+    endTime,
+    settlementTime,
+    onAuctionStatusChange,
+    isOwner,
+    nft,
+    handleSettleAuction,
+  }) => {
     const [timeLeft, setTimeLeft] = useState('');
+    const [status, setStatus] = useState('upcoming');
 
     useEffect(() => {
       if (!startTime || !endTime || !settlementTime) return;
@@ -511,12 +510,24 @@ const NFtDetail = () => {
           const hours = Math.floor(startDiff / 3600);
           const minutes = Math.floor((startDiff % 3600) / 60);
           const seconds = startDiff % 60;
-          setTimeLeft(`⏳ Auction Starts in: ${hours}h ${minutes}m ${seconds}s ⏳`);
+          setTimeLeft(
+            `⏳ Auction Starts in: ${hours}h ${minutes}m ${seconds}s ⏳`
+          );
+          if (status !== 'upcoming') {
+            setStatus('upcoming');
+            onAuctionStatusChange('upcoming');
+          }
         } else if (endDiff > 0) {
           const hours = Math.floor(endDiff / 3600);
           const minutes = Math.floor((endDiff % 3600) / 60);
           const seconds = endDiff % 60;
-          setTimeLeft(`⏳ Auction Ends in: ${hours}h ${minutes}m ${seconds}s ⏳`);
+          setTimeLeft(
+            `⏳ Auction Ends in: ${hours}h ${minutes}m ${seconds}s ⏳`
+          );
+          if (status !== 'active') {
+            setStatus('active');
+            onAuctionStatusChange('active');
+          }
         } else if (settlementDiff > 0 && isOwner) {
           const hours = Math.floor(settlementDiff / 3600);
           const minutes = Math.floor((settlementDiff % 3600) / 60);
@@ -524,42 +535,88 @@ const NFtDetail = () => {
           setTimeLeft(
             `⏳ Auction settlement available in: ${hours}h ${minutes}m ${seconds}s ⏳`
           );
+          if (status !== 'settlement') {
+            setStatus('settlement');
+            onAuctionStatusChange('settlement');
+          }
         } else {
           setTimeLeft(`Auction Ended. settlement is now available.`);
           clearInterval(interval);
-          setStatus('settlement');
+          if (status !== 'ended') {
+            setStatus('ended');
+            onAuctionStatusChange('ended');
+          }
         }
       }, 1000);
 
       return () => clearInterval(interval);
-    }, [startTime, endTime, settlementTime]);
+    }, [
+      startTime,
+      endTime,
+      settlementTime,
+      isOwner,
+      status,
+      onAuctionStatusChange,
+    ]);
 
     return (
       <>
         {timeLeft && (
-          <div className=''>
+          <div>
             <p className='text-green-400'>{timeLeft}</p>
-            {status === 'settlement' && isOwner && nft.oAuctionDetails.nHighestBid > 0 ? (
-              <button
-                className='mt-4 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition'
-                onClick={() => handleSettleAuction(nft)}
-              >
-                Settle Auction
-              </button>
-            ) : !isOwner && isAuctionEnded && isHighestBidder ? (
-              <div className='mt-4'>
+            {status === 'ended' &&
+              isOwner &&
+              nft.oAuctionDetails.nHighestBid > 0 && (
+                <div className='flex flex-col gap-4'>
+                  <p className='text-2xl font-bold '>
+                    🎉{' '}
+                    <span className='bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600 animate-pulse'>
+                      Settle the auction to transfer NFT.
+                    </span>
+                  </p>
+                  <p className='text-gray-200 mt-2'>
+                    🏆 Highest Bidder:{' '}
+                    {sHighestBidder
+                      ? `${sHighestBidder.slice(0, 4)}...${sHighestBidder.slice(-4)}`
+                      : 'None'}
+                    <button
+                      className='ml-1 hover:text-teal-400'
+                      onClick={() => {
+                        handleCopyToClipboard(sHighestBidder);
+                        showToast('Address Copied!');
+                      }}
+                    >
+                      <MdContentCopy />
+                    </button>
+                  </p>
+                  <p className='text-gray-200 mt-2'>
+                    🏆 Winning Bid: {nHighestBid} ETH
+                  </p>
+                  <button
+                    onClick={() => handleSettleAuction(nft)}
+                    className='px-4 py-2  rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                    aria-label='Settle Your Auction'
+                  >
+                    🎉 Settle Your Auction
+                  </button>
+                </div>
+              )}
+            {status === 'ended' && !isOwner && isHighestBidder && (
+              <div className='flex flex-col gap-4'>
+                <p className='text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600 animate-pulse'>
+                  🎉 Congratulations! You are the winner.
+                </p>
+                <p className='text-gray-100 font-semibold'>
+                  🎉 Your winning bid: {nft.oAuctionDetails.nHighestBid} ETH 🎉
+                </p>
                 <button
-                  className='mt-4 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition'
-                  onClick={() => handleSettleAuction(nft)}
+                  onClick={() => handleWinnerNft(nft)}
+                  className='px-4 mt-5 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                  aria-label='Claim Your NFT'
                 >
-                 Claim Nft
+                  Claim Your NFT
                 </button>
               </div>
-            ) : (
-              null
-              // <div>
-              //   <p className='text-red-500 '>Auction Ended</p>
-              // </div>
             )}
           </div>
         )}
@@ -567,9 +624,31 @@ const NFtDetail = () => {
     );
   };
 
+  const handleAuctionStatusChange = (newStatus) => {
+    setAuctionStatus(newStatus);
+  };
+
+  const renderTimer = () => (
+    <CountdownTimer
+      startTime={parseInt(dStartTime)}
+      endTime={parseInt(dEndTime)}
+      settlementTime={parseInt(sSettlementTime)}
+      handleSettleAuction={handleSettleAuction}
+      isOwner={isOwner}
+      nft={nft}
+      onAuctionStatusChange={handleAuctionStatusChange}
+    />
+  );
+
   return (
     <div className='p-8 space-y-8'>
-      {(isBuying || isListing || isCancelling || isBidding || isReclaiming || isClaimingNft || isSettle) && (
+      {(isBuying ||
+        isListing ||
+        isCancelling ||
+        isBidding ||
+        isReclaiming ||
+        isClaimingNft ||
+        isSettle) && (
         <div className='fixed inset-0 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm z-50'>
           <div className='flex flex-col items-center p-8 rounded-lg shadow-2xl animate-pulse'>
             <FaSpinner className='text-6xl text-teal-500 animate-spin mb-4' />
@@ -577,18 +656,18 @@ const NFtDetail = () => {
               {isBuying
                 ? 'Processing Purchase...'
                 : isListing
-                ? 'Listing NFT...'
-                : isCancelling
-                ? 'Cancelling Listing...'
-                : isBidding
-                ? 'Placing your bid...'
-                : isReclaiming
-                ? 'Reclaiming your NFT...'
-                : isClaimingNft
-                ? 'Claiming your NFT...'
-                : isSettle
-                ? 'Settling the auction...'
-                : ''}
+                  ? 'Listing NFT...'
+                  : isCancelling
+                    ? 'Cancelling Listing...'
+                    : isBidding
+                      ? 'Placing your bid...'
+                      : isReclaiming
+                        ? 'Reclaiming your NFT...'
+                        : isClaimingNft
+                          ? 'Claiming your NFT...'
+                          : isSettle
+                            ? 'Settling the auction...'
+                            : ''}
             </p>
             <p className='text-sm text-gray-100 mt-2'>
               This may take a moment.
@@ -598,25 +677,35 @@ const NFtDetail = () => {
       )}
 
       <h1 className='text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 text-center uppercase tracking-wider'>
-        <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:skew-y-1 before:-translate-x-screen before:animate-auto-shine-screen'></div>
+        {/* <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent before:skew-y-1 before:-translate-x-screen before:animate-auto-shine-screen'></div> */}
         <div className='relative text-gray-200'>NFT Detail</div>
       </h1>
 
       <div className='flex space-y-8 mt-8 border-2 border-gray-700 p-8 rounded-lg shadow-lg bg-gray-800/60 backdrop-blur-lg'>
         <div className='flex flex-col items-center space-y-6'>
-          <img
+          <motion.img
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
             src={nft.sImageUrl}
             alt={nft.sNftName}
-            className='w-96 h-108 object-cover rounded-lg cursor-pointer hover:opacity-80 transition'
-            onClick={() => setIsModalOpen(true)}
+            className='w-96 h-102 rounded-lg object-cover cursor-pointer transition-all duration-300'
+            initial={{ y: 20, opacity: 0, rotate: -5 }}
+            animate={{ y: 0, opacity: 1, rotate: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            whileHover={{ scale: 1, rotate: -3, speed: 0.5 }}
           />
         </div>
 
         <div className='flex flex-col space-y-2 ml-10 '>
-          <p className='text-gray-100'>
-            Token address: {nft.sTokenAddress}
+          <p className='text-gray-100 mt-5 text-sm font-mono'>
+            Token address: {''}
+            <br />
+            <span className='font-semibold text-gray-100 mt-3'>
+              {nft.sTokenAddress}
+            </span>
             <button
-              className='ml-1 hover:text-teal-400'
+              className='ml-2 hover:text-teal-400'
               onClick={() => {
                 handleCopyToClipboard(nft.sTokenAddress);
                 showToast('Address Copied!');
@@ -625,13 +714,16 @@ const NFtDetail = () => {
               <MdContentCopy />
             </button>
           </p>
-          <p className='text-gray-100 mt-7'>
-            Name: {nft.sNftName} #{nft.nTokenId}
+          <p className='text-3xl font-extrabold text-white leading-tight mt-4'>
+            {nft.sNftName} #{nft.nTokenId}
           </p>
-          <p className='text-gray-400 mt-7'>
-            Creator: {nft.sFirstMInterAddress}
+          <p className='text-gray-200 mt-4'>
+            Creator: <br />
+            <span className='font-semibold text-gray-300'>
+              {nft.sFirstMInterAddress}
+            </span>
             <button
-              className='ml-1 hover:text-teal-400'
+              className='ml-2 hover:text-teal-400'
               onClick={() => {
                 handleCopyToClipboard(nft.sFirstMInterAddress);
                 showToast('Address Copied!');
@@ -641,9 +733,12 @@ const NFtDetail = () => {
             </button>
           </p>
           <p className='text-gray-100 mt-7'>
-            Current owner: {nft.sCurrentOwner}
+            Current owner: <br />
+            <span className='font-semibold text-gray-300'>
+              {nft.sCurrentOwner}
+            </span>
             <button
-              className='ml-1 hover:text-teal-400'
+              className='ml-2 hover:text-teal-400'
               onClick={() => {
                 handleCopyToClipboard(nft.sCurrentOwner);
                 showToast('Address Copied!');
@@ -652,93 +747,119 @@ const NFtDetail = () => {
               <MdContentCopy />
             </button>
           </p>
-          <p className='text-gray-400 mt-7'>Description: {nft.sDescription}</p>
+          <p className='text-gray-300 mt-4 italic'>
+            Description: {nft.sDescription}
+          </p>
+
+          <motion.div
+            className='mt-6 pt-6 border-t border-gray-700/80'
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1.1 }}
+          ></motion.div>
 
           {nft.isApprovedForSale && (
-            <p className='text-teal-400 mt-10 font-semibold'>
+            <p className='text-teal-400 font-semibold'>
               On Sale: Price: {nft.nNftPrice} ETH
             </p>
           )}
 
           {isOwner && !nft.isApprovedForSale && !nft.isApprovedForAuction ? (
-              renderOwnerActions()
+            renderOwnerActions()
           ) : nft.isApprovedForSale ? (
-            <div >
+            <div>
               {isOwner ? (
                 <button
                   onClick={() => handleCancelListing(nft)}
                   className={`w-full mt-6 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 bg-gradient-to-r ${
                     isCancelling
                       ? 'from-gray-400 to-gray-500 cursor-not-allowed'
-                      : 'from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                      : 'from-pink-400 to-red-600 hover:from-pink-600 hover:to-red-700'
                   } focus:ring-2 focus:ring-purple-400 focus:outline-none`}
                   aria-disabled={isCancelling}
-                  aria-label="Cancel Listing"
+                  aria-label='Cancel Listing'
                 >
                   {isCancelling ? 'Cancelling...' : 'Cancel Listing'}
                 </button>
               ) : (
                 <button
                   onClick={handleBuyBtnNFt}
-                  className="w-full mt-6 px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300"
-                  aria-label="Buy NFT"
+                  className='w-full mt-6 px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                  aria-label='Buy NFT'
                 >
                   Buy
                 </button>
               )}
             </div>
-          ) : isAuctionActive ? (
+          ) : auctionStatus === 'active' ? (
             <div>
               {isHighestBidder ? (
-                <div className="flex flex-col gap-4">
-                  <div className='mt-7'>
-                    {renderTimer()}
-                  </div>
+                <div className='flex flex-col gap-4'>
+                  <div className='mt-2'>{renderTimer()}</div>
+                  <p className='text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-teal-200 to-teal-600'>
+                    Current Bid: {nHighestBid} ETH
+                  </p>
+                  <p className='text-gray-400 text-sm mt-1'>
+                    Current Bidder:{' '}
+                    {sHighestBidder
+                      ? `${sHighestBidder.slice(0, 6)}...${sHighestBidder.slice(-4)}`
+                      : 'None'}
+                    <button
+                      className='ml-2 hover:text-teal-400'
+                      onClick={() => {
+                        handleCopyToClipboard(sHighestBidder);
+                        showToast('Address Copied!');
+                      }}
+                    >
+                      <MdContentCopy />
+                    </button>
+                  </p>
                   <button
                     disabled
-                    className="px-4 py-2 mt-7 rounded-lg font-semibold text-white bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed focus:ring-2 focus:ring-gray-300 focus:outline-none"
-                    aria-disabled="true"
-                    aria-label="Not Allowed for Next Bid"
+                    className='px-4 py-2 mt-2 rounded-lg font-semibold text-white bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed focus:ring-2 focus:ring-gray-300 focus:outline-none'
+                    aria-disabled='true'
+                    aria-label='Not Allowed for Next Bid'
                   >
                     Not Allowed for Next Bid
                   </button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
+                <div className='flex flex-col gap-4'>
                   {hasBids ? (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-lg bg-clip-text text-transparent bg-gradient-to-r from-teal-200 to-teal-600 mt-7">
+                    <div className='flex flex-col gap-2'>
+                      <p className='text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-teal-200 to-teal-600'>
                         Current Bid: {nHighestBid} ETH
                       </p>
-                      <p className="text-gray-200 mt-7">
-                        Previous Bidder:{' '}
+                      <p className='text-gray-400 text-sm mt-1'>
+                        Current Bidder:{' '}
                         {sHighestBidder
-                          ? `${sHighestBidder.slice(0, 4)}...${sHighestBidder.slice(-4)}`
+                          ? `${sHighestBidder.slice(0, 6)}...${sHighestBidder.slice(-4)}`
                           : 'None'}
-                      <button
-                        className='ml-1 hover:text-teal-400'
-                        onClick={() => {
-                          handleCopyToClipboard(sHighestBidder);
-                          showToast('Address Copied!');
-                        }}
-                      >
-                        <MdContentCopy className='w-4 h-4 text-res-500' />
-                      </button>
+                        <button
+                          className='ml-1 hover:text-teal-400'
+                          onClick={() => {
+                            handleCopyToClipboard(sHighestBidder);
+                            showToast('Address Copied!');
+                          }}
+                        >
+                          <MdContentCopy className='w-4 h-4 text-res-500' />
+                        </button>
                       </p>
                     </div>
                   ) : (
-                    <p className="text-gray-200 mt-7">
-                      🎬 Bidding Starts from: {nft.oAuctionDetails.nBasePrice} ETH 🎬
-                    </p>
+                    <div className='mt-2'>
+                      <p className='font-semibold text-gray-200 mb-5'>
+                        Base Price : {nft.oAuctionDetails.nBasePrice} ETH
+                      </p>
+                    </div>
                   )}
-                  <div className='mt-7'>
-                    {renderTimer()}
-                  </div>
-                  {!isOwner && (
+                  {renderTimer()}
+
+                  {!isOwner && auctionStatus === 'active' && (
                     <button
                       onClick={() => handlePlaceBidClick(nft)}
-                      className="px-4 mt-7 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300"
-                      aria-label="Place Bid"
+                      className='px-4 mt-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                      aria-label='Place Bid'
                     >
                       👨‍⚖️ Place Bid 👨‍⚖️
                     </button>
@@ -747,35 +868,68 @@ const NFtDetail = () => {
               )}
             </div>
           ) : isAuctionEnded ? (
-            <div >
+            <div>
               {hasBids ? (
                 isHighestBidder ? (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600 mt-6">
+                  <div className='flex flex-col gap-4'>
+                    <p className='text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600 animate-pulse'>
                       🎉 Congratulations! You are the winner.
                     </p>
-                    <p className="text-gray-100 mt-6">
-                      🎉 Your winning bid: {nft.oAuctionDetails.nHighestBid} ETH 🎉 
+                    <p className='text-gray-100 font-semibold'>
+                      🎉 Your winning bid: {nft.oAuctionDetails.nHighestBid} ETH
+                      🎉
                     </p>
                     <button
                       onClick={() => handleWinnerNft(nft)}
-                      className="px-4 mt-5 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300"
-                      aria-label="Claim Your NFT"
+                      className='px-4 mt-5 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                      aria-label='Claim Your NFT'
                     >
                       Claim Your NFT
                     </button>
                   </div>
                 ) : isOwner ? (
                   isSettlementPeriod ? (
-                    <div className="flex flex-col gap-4">
-                      <p className="text-gray-200 mt-7">
-                        🎉 Please settle the auction to transfer NFT.
+                    <div className='flex flex-col gap-4'>
+                      <p className='text-2xl font-bold '>
+                        🎉{' '}
+                        <span className='bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600 animate-pulse'>
+                          Settle the auction to transfer NFT.
+                        </span>
                       </p>
-                      <p className="text-gray-200 mt-6">
+                      <p className='text-gray-200 mt-2'>
                         🏆 Highest Bidder:{' '}
                         {sHighestBidder
                           ? `${sHighestBidder.slice(0, 4)}...${sHighestBidder.slice(-4)}`
                           : 'None'}
+                        <button
+                          className='ml-1 hover:text-teal-400'
+                          onClick={() => {
+                            handleCopyToClipboard(sHighestBidder);
+                            showToast('Address Copied!');
+                          }}
+                        >
+                          <MdContentCopy />
+                        </button>
+                      </p>
+                      <p className='text-gray-200 mt-2'>
+                        🏆 Winning Bid: {nHighestBid} ETH
+                      </p>
+                      <button
+                        onClick={() => handleSettleAuction(nft)}
+                        className='px-4 py-2  rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                        aria-label='Settle Your Auction'
+                      >
+                        🎉 Settle Your Auction
+                      </button>
+                    </div>
+                  ) : (
+                    <div className='mt-2'>{renderTimer()}</div>
+                  )
+                ) : (
+                  <div className='flex flex-col gap-2'>
+                    <p className='text-gray-100 text-lg font-semibold'>
+                      🎉 Winner:{' '}
+                      {`${sHighestBidder.slice(0, 4)}...${sHighestBidder.slice(-4)}`}
                       <button
                         className='ml-1 hover:text-teal-400'
                         onClick={() => {
@@ -783,50 +937,39 @@ const NFtDetail = () => {
                           showToast('Address Copied!');
                         }}
                       >
-                        <MdContentCopy />
-                      </button> 
-                      </p>
-                      <p className="text-gray-200 mt-7">🏆 Winning Bid: {nHighestBid} ETH</p>
-                      <button
-                        onClick={() => handleSettleAuction(nft)}
-                        className="px-4 py-2 mt-6 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300"
-                        aria-label="Settle Your Auction"
-                      >
-                        🎉 Settle Your Auction
+                        <MdContentCopy className=' mt-1 h-4 w-4' />
                       </button>
-                    </div>
-                  ) : (
-                    <div className='mt-7'>
-                      {renderTimer()}
-                    </div>
-                  )
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-gray-100 mt-10">🎉 Winner: {`${sHighestBidder.slice(0, 4)}...${sHighestBidder.slice(-4)}`}</p>
-                    <p className="text-gray-100 mt-10">🎉 Winning Bid: {nHighestBid} ETH</p>
+                    </p>
+                    <p className='text-gray-100 text-lg font-semibold'>
+                      🎉 Winning Bid: {nHighestBid} ETH
+                    </p>
                   </div>
                 )
+              ) : isOwner ? (
+                <div className='flex flex-col gap-4'>
+                  <p className='text-lg  font-semibold'>
+                    🥺{' '}
+                    <span className='text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600'>
+                      No bids were placed in your auction.
+                    </span>{' '}
+                    🥹
+                  </p>
+                  <button
+                    onClick={() => handleReclaimNft(nft)}
+                    className='px-4 mt-7 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300'
+                    aria-label='Re-Claim Your NFT'
+                  >
+                    Re-Claim Your NFT 🥲
+                  </button>
+                </div>
               ) : (
-                isOwner ? (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-gray-100 mt-7">🥺 No bids were placed in your auction. 🥹</p>
-                    <button
-                      onClick={() => handleReclaimNft(nft)}
-                      className="px-4 mt-7 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:ring-2 focus:ring-purple-400 focus:outline-none transition-all duration-300"
-                      aria-label="Re-Claim Your NFT"
-                    >
-                      Re-Claim Your NFT 🥲
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-red-400 mt-10">⌛️ Auction ended. No bids were placed ⌛️</p>
-                )
+                <p className='text-lg text-red-400 font-semibold'>
+                  ⌛️ Auction ended. No bids were placed ⌛️
+                </p>
               )}
             </div>
           ) : (
-            <div className='mt-7'>
-              {renderTimer()}
-            </div>
+            renderTimer()
           )}
         </div>
       </div>
@@ -973,13 +1116,14 @@ const NFtDetail = () => {
 
               <div className='flex justify-end gap-4 relative z-10'>
                 <button
+                  disabled={isProcessing}
                   onClick={() => {
                     setIsBidModalOpen(false);
                     setBidAmountInput('');
                     setSelectedNftForBid(null);
                     setIsBidding(false);
                   }}
-                  className='bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 text-lg' // Increased padding, text size
+                  className='bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 text-lg'
                 >
                   Cancel
                 </button>
@@ -995,7 +1139,7 @@ const NFtDetail = () => {
                 </button>
               </div>
             </motion.div>
-          </motion.div> 
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
@@ -1003,7 +1147,3 @@ const NFtDetail = () => {
 };
 
 export default NFtDetail;
-
-
-
-

@@ -115,7 +115,7 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction }) => {
     return Object.values(newErrors).every((error) => !error);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit =async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -137,7 +137,9 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction }) => {
     // onConfirmAuction will handle its own loading and closing
     setIsProcessing(true);
 
-    onConfirmAuction(nft, parsedInitialPrice.toString(), auctionStartTime, auctionEndTime);
+    await onConfirmAuction(nft, parsedInitialPrice.toString(), auctionStartTime, auctionEndTime);
+
+    setIsProcessing(false);
     // Do NOT call onClose() here. Let onConfirmAuction (in BuySell.js) decide when to close
     // based on the transaction outcome (success/failure).
   };

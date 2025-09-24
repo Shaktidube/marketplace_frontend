@@ -1,4 +1,4 @@
-import React, { useState, useRef, Fragment } from 'react';
+import React, { useState, useRef, Fragment, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   useInfiniteQuery,
@@ -29,6 +29,8 @@ const Profile = () => {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState(user.sUsername || '');
   const [usernameError, setUsernameError] = useState('');
+  const [animationStartTime, setAnimationStartTime] = useState(Date.now());
+  
 
   const { mutate: mutateUpdateImage, isLoading: isImageUpdating } = useMutation(
     {
@@ -115,6 +117,12 @@ const Profile = () => {
     refetchOnMount: false,
   });
 
+  useEffect(() => {
+      if (isFetchingNextPage) {
+        setAnimationStartTime(Date.now());
+      }
+    }, [isFetchingNextPage]);
+
   if (isLoading) {
     return (
       <div className='flex justify-center items-center h-full min-h-[50vh]'>
@@ -146,15 +154,28 @@ const Profile = () => {
     setIsEditingUsername(true);
   };
 
+  // const handleUsernameChange = (e) => {
+  //   const value = e.target.value;
+  //   if (/\s/.test(value)) {
+  //     setUsernameError('Username cannot contain spaces.');
+  //   } else {
+  //     setUsernameError('');
+  //   }
+  //   setNewUsername(value);
+  // };
   const handleUsernameChange = (e) => {
-    const value = e.target.value;
-    if (/\s/.test(value)) {
-      setUsernameError('Username cannot contain spaces.');
-    } else {
-      setUsernameError('');
-    }
-    setNewUsername(value);
-  };
+  const value = e.target.value;
+
+  const usernameRegex = /^(?!.*\s)[a-zA-Z][a-zA-Z0-9_]{1,28}[a-zA-Z0-9]$/;
+
+  if (!usernameRegex.test(value)) {
+    setUsernameError('Username is not valid.');
+  } else {
+    setUsernameError('');
+  }
+
+  setNewUsername(value);
+};
 
   const handleSaveUsername = () => {
     if (newUsername.trim() === '') {
@@ -309,6 +330,8 @@ const Profile = () => {
                   to={`/nft-detail/${nft._id}`}
                   key={nft._id}
                   className='relative bg-gray-800/80 rounded-2xl overflow-hidden shadow-lg border border-gray-700 transform transition-transform duration-300 hover:scale-105 hover:border-teal-500'
+                  style={{ '--animation-start': `${animationStartTime}ms` }}
+
                 >
                   <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-full before:animate-auto-shine'></div>
 
