@@ -21,7 +21,7 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/your-username/marketplace_frontend.git
-cd marketplace_frontend
+cd frontend/marketplace_frontend
 ```
 1.**⚙️ Environment Variables**
 
