@@ -2,8 +2,6 @@
 
 🚀 A modern **NFT Marketplace Frontend** built with **React + Vite**, styled using **Tailwind CSS**, and powered by **React Query** for data fetching.  
 
-This project provides an interface to browse, search, sort, list, and interact with NFTs.
-
 ---
 
 ## ⚡ Tech Stack
@@ -38,12 +36,12 @@ Update the variables inside .env as per your setup.
 
 Example:
 ```bash
-  VITE_API_BASE_URL = 
-  VITE_PROJECT_ID = 
-  VITE_MINT_CONTRACT_ADDRESS = 
-  VITE_MARKET_CONTRACT_ADDRESS = 
-  VITE_MEDIA_CONTRACT_ADDRESS = 
-  VITE_BACKEND_URL=
+  VITE_API_BASE_URL = YOUR_VITE_API_BASE_URL
+  VITE_PROJECT_ID = YOUR_VITE_PROJECT_ID
+  VITE_MINT_CONTRACT_ADDRESS = YOUR_VITE_MINT_CONTRACT_ADDRESS
+  VITE_MARKET_CONTRACT_ADDRESS = YOUR_VITE_MARKET_CONTRACT_ADDRESS
+  VITE_MEDIA_CONTRACT_ADDRESS = YOUR_VITE_MEDIA_CONTRACT_ADDRESS
+  VITE_BACKEND_URL = YOUR_VITE_BACKEND_URL
 ```
 
 
@@ -64,6 +62,7 @@ Start the development server:**
 ```
 
 5. **🛠️ Project Structure**
+```bash
 frontend/
   marketplace_frontend/
   │── public/              # Static assets
@@ -80,3 +79,4 @@ frontend/
   ├── package.json         # Project config & dependencies
   ├── tailwind.config.js   # Tailwind CSS config
   └── vite.config.js       # Vite config
+```
