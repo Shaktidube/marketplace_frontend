@@ -24,7 +24,7 @@ Clone the repository:
 ```bash
 git clone https://github.com/your-username/marketplace_frontend.git
 cd marketplace_frontend
-
+```
 1.**⚙️ Environment Variables**
 
 This project uses environment variables for configuration.
@@ -32,31 +32,36 @@ This project uses environment variables for configuration.
 Copy .env.example into a new .env file:
   ```bash
     cp .env.example .env
+  ```
 
 Update the variables inside .env as per your setup.
 
 Example:
-```
+```bash
   VITE_API_BASE_URL = 
   VITE_PROJECT_ID = 
   VITE_MINT_CONTRACT_ADDRESS = 
   VITE_MARKET_CONTRACT_ADDRESS = 
   VITE_MEDIA_CONTRACT_ADDRESS = 
   VITE_BACKEND_URL=
+```
 
 
 2. **Install dependencies**:
    ```bash
    npm install
+   ```
 
 3. **🚀 Running the Project
 Start the development server:**
   ```bash
   npm run dev
+```
 
 4. **Then open your browser at:**
   ```bash
   http://localhost:5173
+```
 
 5. **🛠️ Project Structure**
 frontend/
