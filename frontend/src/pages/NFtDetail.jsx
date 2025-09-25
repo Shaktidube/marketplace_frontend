@@ -6,9 +6,11 @@ import { useSelector } from 'react-redux';
 import { MdContentCopy } from 'react-icons/md';
 import {
   cancelListing,
+  formatTimeDiff,
   getContractInstance,
   handleBuyNFt,
   handleCopyToClipboard,
+  handleUserRejection,
   showToast,
 } from '../utils/helper';
 import SellModal from '../components/SellModal';
@@ -25,24 +27,18 @@ const queryKey = {
 
 const NFtDetail = () => {
   const navigate = useNavigate();
-  const user = useSelector((state) => state.auth.user);
   const { nftId } = useParams();
+  const user = useSelector((state) => state.auth.user);
   const { walletProvider } = useAppKitProvider('eip155');
+  const [status, setStatus] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [isAuctionModalOpen, setIsAuctionModalOpen] = useState(false);
   const [selectedNft, setSelectedNft] = useState(null);
-  const [isListing, setIsListing] = useState(false);
-  const [isBuying, setIsBuying] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
   const [isBidModalOpen, setIsBidModalOpen] = useState(false);
   const [selectedNftForBid, setSelectedNftForBid] = useState(null);
   const [bidAmountInput, setBidAmountInput] = useState('');
   const [minimumBidRequiredEth, setMinimumBidRequiredEth] = useState(0);
-  const [isBidding, setIsBidding] = useState(false);
-  const [isReclaiming, setIsReclaiming] = useState(false);
-  const [isClaimingNft, setIsClaimingNft] = useState(false);
-  const [isSettle, setIsSettle] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [auctionStatus, setAuctionStatus] = useState('upcoming');
 
@@ -66,11 +62,12 @@ const NFtDetail = () => {
   const handlePlaceBidClick = useCallback((nft) => {
     try {
       setSelectedNftForBid(nft);
+
       setIsBidModalOpen(true);
 
       const minimumREquiredBid =
         nft.oAuctionDetails.nHighestBid > 0
-          ? parseFloat(nft.oAuctionDetails.nHighestBid) * 1.0001
+          ? parseFloat(nft.oAuctionDetails.nHighestBid) * 1.01
           : parseFloat(nft.oAuctionDetails.nBasePrice);
       setMinimumBidRequiredEth(minimumREquiredBid);
     } catch (error) {
@@ -108,7 +105,7 @@ const NFtDetail = () => {
         import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
         data.data.nft.nTokenId
       );
-      setIsListing(true);
+      setStatus("listing");
       await tx.wait();
       console.log('NFT APPROVED');
 
@@ -121,7 +118,7 @@ const NFtDetail = () => {
       // showToast("success! We will notify you when it's available", "success");
       console.log('NFT LISTED FOR SALE', rTx);
 
-      setIsListing(false);
+      setStatus(null);
       setIsSellModalOpen(false);
       navigate('/buy-sell');
 
@@ -131,21 +128,16 @@ const NFtDetail = () => {
 
       // navigate('/buy-sell');
     } catch (error) {
-      setIsListing(false);
+      setStatus(null);
       setIsSellModalOpen(false);
-      console.error('Error listing NFT for sale:', error);
-      if (error.code === 'ACTION_REJECTED') {
-        showToast('Transaction rejected by user.', 'error');
-      } else if (error.reason === null) {
-        showToast('Insufficient funds!! NFt is blocked!', 'error');
-      }
+      handleUserRejection(error);
       console.log('error code : ', error.code);
     }
   };
 
   const handleBuyBtnNFt = async () => {
     try {
-      setIsBuying(true);
+      setStatus("buying");
       const result = await handleBuyNFt(data.data.nft, walletProvider);
       if (result && result.success) {
         console.log('Buying transaction successful');
@@ -157,17 +149,17 @@ const NFtDetail = () => {
     } catch (error) {
       console.log(error, 'error in buying nft');
     } finally {
-      setIsBuying(false);
+      setStatus(null);
     }
   };
 
   const handleCancelListing = async (nft) => {
     try {
-      setIsCancelling(true);
+      setStatus("cancelling");
       const result = await cancelListing(nft, walletProvider);
       if (result && result.success) {
         console.log('Cancel listing transaction successful');
-        setIsCancelling(false);
+        setStatus(null);
         // await delay(10000);
         // navigate('/profile');
         return;
@@ -175,7 +167,7 @@ const NFtDetail = () => {
     } catch (error) {
       console.log(error, 'error in cancelling nft listing');
     } finally {
-      setIsCancelling(false);
+      setStatus(null);
     }
   };
 
@@ -206,7 +198,7 @@ const NFtDetail = () => {
         import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
         data.data.nft.nTokenId
       );
-      setIsListing(true);
+      setStatus("listing");
       await tx.wait();
       console.log('NFT APPROVED');
 
@@ -229,28 +221,23 @@ const NFtDetail = () => {
       const rTx = await auctionTx.wait();
       console.log('NFT LISTED FOR AUCTION', rTx);
 
-      setIsListing(false);
+      setStatus(null);
       setIsAuctionModalOpen(false);
       navigate('/buy-sell');
 
       const nPriceInEth = parseFloat(startingPrice);
       console.log('Starting Price in ETH:', nPriceInEth);
 
-      setIsListing(false);
+      setStatus(null);
+
       setIsSellModalOpen(false);
 
       navigate('/home');
     } catch (error) {
-      setIsListing(false);
+      setStatus(null);
       setIsAuctionModalOpen(false);
       console.error('Error listing NFT for auction:', error);
-      if (error.code === 'ACTION_REJECTED') {
-        showToast('Transaction rejected by user.', 'error');
-      } else if (error.reason === null) {
-        showToast('Insufficient funds!! NFt is blocked!', 'error');
-      } else if (error.reason === 'Market : Token already listed') {
-        showToast('NFT is already listed in auction or sale', 'error');
-      }
+      handleUserRejection(error);
       console.log('error code : ', error.code);
     } finally {
       setIsProcessing(false);
@@ -261,7 +248,7 @@ const NFtDetail = () => {
     try {
       setSelectedNftForBid(nft);
       setIsBidModalOpen(true);
-      setIsBidding(true);
+      setStatus("bidding");
       setIsProcessing(true);
 
       console.log('handlePlaceBid called with nft:', nft);
@@ -284,7 +271,7 @@ const NFtDetail = () => {
       await bidTx.wait();
       setIsBidModalOpen(false);
       setSelectedNftForBid('');
-      setIsBidding(false);
+      setStatus(null);
 
       console.log('BID PLACED');
 
@@ -294,19 +281,15 @@ const NFtDetail = () => {
       return { success: true };
     } catch (error) {
       console.error('Error placing bid:', error);
-      if (error.code === 'ACTION_REJECTED') {
-        showToast('Transaction rejected by user.', 'error');
-        throw new Error('Transaction rejected by user');
-      }
-      if (error.code === 'INSUFFICIENT_FUNDS') {
-        showToast('Insufficient funds', 'error');
-        throw new Error('Insufficient funds');
+      handleUserRejection(error);
+      if(error == "RangeError: too many decimals for format "){
+        showToast("Please enter a valid bid amount.", "error");
       }
       throw error;
     } finally {
       setIsBidModalOpen(false);
       setSelectedNftForBid('');
-      setIsBidding(false);
+      setStatus(null);
       setIsProcessing(false);
     }
   };
@@ -314,7 +297,7 @@ const NFtDetail = () => {
   const handleSettleAuction = async (nft) => {
     console.log('handleSettleAuction called with nft:', nft);
     try {
-      setIsSettle(true);
+      setStatus("settling");
       console.log('handleSettleAuction called with nft:', nft);
       const { contract } = await getContractInstance(walletProvider);
 
@@ -335,23 +318,16 @@ const NFtDetail = () => {
       return { success: true };
     } catch (error) {
       console.error('Error claiming NFT:', error);
-      if (error.code === 'ACTION_REJECTED') {
-        showToast('Transaction rejected by user.', 'error');
-        throw new Error('Transaction rejected by user');
-      }
-      if (error.code === 'INSUFFICIENT_FUNDS') {
-        showToast('Insufficient funds', 'error');
-        throw new Error('Insufficient funds');
-      }
+      handleUserRejection(error);
       throw error;
     } finally {
-      setIsSettle(false);
+      setStatus(null);
     }
   };
 
   const handleWinnerNft = async (nft) => {
     try {
-      setIsClaimingNft(true);
+      setStatus("claiming");
       console.log('handleBuyNFt called with nft:', nft);
       const { contract } = await getContractInstance(walletProvider);
 
@@ -372,23 +348,16 @@ const NFtDetail = () => {
       return { success: true };
     } catch (error) {
       console.error('Error claiming NFT:', error);
-      if (error.code === 'ACTION_REJECTED') {
-        showToast('Transaction rejected by user.', 'error');
-        throw new Error('Transaction rejected by user');
-      }
-      if (error.code === 'INSUFFICIENT_FUNDS') {
-        showToast('Insufficient funds', 'error');
-        throw new Error('Insufficient funds');
-      }
+      handleUserRejection(error);
       throw error;
     } finally {
-      setIsClaimingNft(false);
+      setStatus(null);
     }
   };
 
   const handleReclaimNft = async (nft) => {
     try {
-      setIsReclaiming(true);
+      setStatus("reclaiming");
       console.log('handleReclaimNft called with nft:', nft);
       const { contract } = await getContractInstance(walletProvider);
 
@@ -409,17 +378,10 @@ const NFtDetail = () => {
       return { success: true };
     } catch (error) {
       console.error('Error reclaiming NFT:', error);
-      if (error.code === 'ACTION_REJECTED') {
-        showToast('Transaction rejected by user.', 'error');
-        throw new Error('Transaction rejected by user');
-      }
-      if (error.code === 'INSUFFICIENT_FUNDS') {
-        showToast('Insufficient funds', 'error');
-        throw new Error('Insufficient funds');
-      }
+      handleUserRejection(error);
       throw error;
     } finally {
-      setIsReclaiming(false);
+      setStatus(null);
     }
   };
 
@@ -435,13 +397,22 @@ const NFtDetail = () => {
     tokenId: nft.nTokenId,
   };
 
+  const getStatusMessage = () => {
+    switch (status) {
+      case "buying": return "Processing Purchase...";
+      case "listing": return "Listing NFT...";
+      case "cancelling": return "Cancelling Listing...";
+      case "bidding": return "Placing your bid...";
+      case "reclaiming": return "Reclaiming your NFT...";
+      case "claiming": return "Claiming your NFT...";
+      case "settling": return "Settling the auction...";
+      default: return "";
+    }
+  };
+
   const { dStartTime, dEndTime, sSettlementTime, nHighestBid, sHighestBidder } =
     nft.oAuctionDetails;
   const now = Math.floor(Date.now() / 1000);
-
-  // const isAuctionActive = nft.isApprovedForAuction &&
-  // parseInt(dStartTime) < now &&
-  // parseInt(dEndTime) > now;
 
   const isAuctionEnded = nft.isApprovedForAuction && parseInt(dEndTime) <= now;
   const hasBids = nft.oAuctionDetails.nHighestBid > 0;
@@ -449,27 +420,12 @@ const NFtDetail = () => {
   const isOwner = user.sWalletAddress === nft.sCurrentOwner;
   const isHighestBidder = sHighestBidder === user.sWalletAddress;
 
-  // console.log(isSettlementPeriod , 'isSettlementPeriod');
-  // console.log(
-  //   'nft details:',
-  //   nft,
-  //   isOwner,
-  //   isAuctionActive,
-  //   isAuctionPending,
-  //   isAuctionSettling,
-  //   isAuctionEnded,
-  //   now,
-  //   dStartTime,
-  //   dEndTime,
-  //   sSettlementTime
-  // );
-
   const renderOwnerActions = () => (
     <div className='flex space-x-4'>
       <button
         onClick={handleSellClick}
         className='w-full px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600 transition'
-        disabled={isListing || isBuying}
+        disabled={status === "listing"}
         aria-label='Put on sale'
       >
         Put on Sell
@@ -477,7 +433,7 @@ const NFtDetail = () => {
       <button
         onClick={handleAuctionClick}
         className='w-full px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition'
-        disabled={isListing || isBuying}
+        disabled={status === "listing"}
         aria-label='Put on auction'
       >
         Put on Auction
@@ -507,33 +463,27 @@ const NFtDetail = () => {
         const settlementDiff = settlementTime - now;
 
         if (startDiff > 0) {
-          const hours = Math.floor(startDiff / 3600);
-          const minutes = Math.floor((startDiff % 3600) / 60);
-          const seconds = startDiff % 60;
+          const { days, hours, minutes, seconds } = formatTimeDiff(startDiff);
           setTimeLeft(
-            `⏳ Auction Starts in: ${hours}h ${minutes}m ${seconds}s ⏳`
+            `⏳ Auction Starts in: ${days}d ${hours}h ${minutes}m ${seconds}s ⏳`
           );
           if (status !== 'upcoming') {
             setStatus('upcoming');
             onAuctionStatusChange('upcoming');
           }
         } else if (endDiff > 0) {
-          const hours = Math.floor(endDiff / 3600);
-          const minutes = Math.floor((endDiff % 3600) / 60);
-          const seconds = endDiff % 60;
+          const { days, hours, minutes, seconds } = formatTimeDiff(endDiff);
           setTimeLeft(
-            `⏳ Auction Ends in: ${hours}h ${minutes}m ${seconds}s ⏳`
+            `⏳ Auction Ends in: ${days}d ${hours}h ${minutes}m ${seconds}s ⏳`
           );
           if (status !== 'active') {
             setStatus('active');
             onAuctionStatusChange('active');
           }
         } else if (settlementDiff > 0 && isOwner) {
-          const hours = Math.floor(settlementDiff / 3600);
-          const minutes = Math.floor((settlementDiff % 3600) / 60);
-          const seconds = settlementDiff % 60;
+          const { days, hours, minutes, seconds } = formatTimeDiff(settlementDiff);
           setTimeLeft(
-            `⏳ Auction settlement available in: ${hours}h ${minutes}m ${seconds}s ⏳`
+            `⏳ Auction settlement available in: ${days}d ${hours}h ${minutes}m ${seconds}s ⏳`
           );
           if (status !== 'settlement') {
             setStatus('settlement');
@@ -568,7 +518,7 @@ const NFtDetail = () => {
               isOwner &&
               nft.oAuctionDetails.nHighestBid > 0 && (
                 <div className='flex flex-col gap-4'>
-                  <p className='text-2xl font-bold '>
+                  <p className='text-2xl font-bold mt-2'>
                     🎉{' '}
                     <span className='bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600 animate-pulse'>
                       Settle the auction to transfer NFT.
@@ -638,36 +588,16 @@ const NFtDetail = () => {
       nft={nft}
       onAuctionStatusChange={handleAuctionStatusChange}
     />
-  );
+  );  
 
   return (
     <div className='p-8 space-y-8'>
-      {(isBuying ||
-        isListing ||
-        isCancelling ||
-        isBidding ||
-        isReclaiming ||
-        isClaimingNft ||
-        isSettle) && (
+      {(status != null) && (
         <div className='fixed inset-0 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm z-50'>
           <div className='flex flex-col items-center p-8 rounded-lg shadow-2xl animate-pulse'>
             <FaSpinner className='text-6xl text-teal-500 animate-spin mb-4' />
             <p className='text-xl font-semibold text-gray-100'>
-              {isBuying
-                ? 'Processing Purchase...'
-                : isListing
-                  ? 'Listing NFT...'
-                  : isCancelling
-                    ? 'Cancelling Listing...'
-                    : isBidding
-                      ? 'Placing your bid...'
-                      : isReclaiming
-                        ? 'Reclaiming your NFT...'
-                        : isClaimingNft
-                          ? 'Claiming your NFT...'
-                          : isSettle
-                            ? 'Settling the auction...'
-                            : ''}
+              {getStatusMessage()}
             </p>
             <p className='text-sm text-gray-100 mt-2'>
               This may take a moment.
@@ -732,9 +662,15 @@ const NFtDetail = () => {
               <MdContentCopy />
             </button>
           </p>
-          <p className='text-gray-100 mt-7'>
+          <p className='text-gray-200 mt-4'>
+            Royalty:
+            <span className='font-bold text-gray-100 font-italic text-xl'>
+              &nbsp;{nft.nRoyalty}%
+            </span>
+          </p>
+          <p className='text-gray-100 mt-4'>
             Current owner: <br />
-            <span className='font-semibold text-gray-300'>
+            <span className='font-semibold text-gray-300 '>
               {nft.sCurrentOwner}
             </span>
             <button
@@ -772,14 +708,14 @@ const NFtDetail = () => {
                 <button
                   onClick={() => handleCancelListing(nft)}
                   className={`w-full mt-6 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 bg-gradient-to-r ${
-                    isCancelling
+                    status === "cancelling"
                       ? 'from-gray-400 to-gray-500 cursor-not-allowed'
                       : 'from-pink-400 to-red-600 hover:from-pink-600 hover:to-red-700'
                   } focus:ring-2 focus:ring-purple-400 focus:outline-none`}
-                  aria-disabled={isCancelling}
+                  aria-disabled={status === "cancelling"}
                   aria-label='Cancel Listing'
                 >
-                  {isCancelling ? 'Cancelling...' : 'Cancel Listing'}
+                  {(status === "cancelling") ? 'Cancelling...' : 'Cancel Listing'}
                 </button>
               ) : (
                 <button
@@ -848,7 +784,7 @@ const NFtDetail = () => {
                     </div>
                   ) : (
                     <div className='mt-2'>
-                      <p className='font-semibold text-gray-200 mb-5'>
+                      <p className='font-semibold text-gray-200 mb-3'>
                         Base Price : {nft.oAuctionDetails.nBasePrice} ETH
                       </p>
                     </div>
@@ -1071,7 +1007,10 @@ const NFtDetail = () => {
                 <p className='text-xl font-semibold text-blue-300 mb-2'>
                   Current Highest Bid:{' '}
                   <span className='font-bold text-blue-200'>
-                    {selectedNftForBid.oAuctionDetails.nHighestBid} ETH
+                    {selectedNftForBid.oAuctionDetails.nHighestBid > 0
+                      ? selectedNftForBid.oAuctionDetails.nHighestBid + ' ETH'
+                      : 'No Bids Yet'}{' '}
+                    
                   </span>
                 </p>
                 <p className='text-lg text-yellow-300 mt-2'>
@@ -1108,7 +1047,7 @@ const NFtDetail = () => {
                       ? `Minimum ${minimumBidRequiredEth} ETH`
                       : 'Enter your bid'
                   }
-                  step='0.000001'
+                  // step='0.000001'
                   min={minimumBidRequiredEth}
                   className='shadow appearance-none border border-gray-700 rounded-lg w-full py-3 px-4 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 bg-gray-700 focus:border-transparent transition-all duration-200' // Rounded corners for input
                 />
@@ -1121,7 +1060,7 @@ const NFtDetail = () => {
                     setIsBidModalOpen(false);
                     setBidAmountInput('');
                     setSelectedNftForBid(null);
-                    setIsBidding(false);
+                    setStatus(null);
                   }}
                   className='bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 text-lg'
                 >

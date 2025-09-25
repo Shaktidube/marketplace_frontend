@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'; // Import motion for an
 
 import './auctionCsss/AuctionModal.css'; // Your custom CSS for datepicker might be here
 import { ethers } from 'ethers';
+import { showToast } from '../utils/helper';
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.75 },
@@ -59,10 +60,15 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction }) => {
               error = "Invalid price. Please enter a number.";
             } else if (parsedPrice <= 0) {
               error = "Price must be greater than zero.";
-            } else if(decimalPart.length > 3) {
+
+            } else if (parsedPrice > 1000000) {
+              error = 'Price seems too high. Please enter a reasonable amount.';
+            } else if (decimalPart.length > 3) {
               error = "Price can have at most 3 decimal places (e.g., 0.123 ETH).";
             }
           }
+          const parsedPrice = parseFloat(value);
+          
         }
         break;
 
@@ -119,7 +125,7 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction }) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please correct the errors in the form.");
+      showToast("Please correct the errors in the form." , "error");
       return;
     }
 

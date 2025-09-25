@@ -47,6 +47,18 @@ export const handle422Error = (error) => {
   }
 };
 
+export const handleUserRejection = (error) => {
+  if (error.code === "ACTION_REJECTED") {
+    toast.error('Transaction rejected by user.');
+  } else if( error.code === "INSUFFICIENT_FUNDS") {
+    toast.error('Insufficient funds');
+  } else if(error.reason === null) {
+    toast.error('Transaction failed');
+  } else if (error.reason === 'Market : Token already listed') {
+    toast.error('NFT is already listed in auction or sale', 'error');
+  }
+}
+
 export const handleCopyToClipboard = (text) => {
   navigator.clipboard.writeText(text);
 };
@@ -72,6 +84,14 @@ export const showToast = (message, type = 'success') => {
       toast(message);
       break;
   }
+};
+
+export const formatTimeDiff = (diff) => {
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor((diff % 86400) / 3600);
+  const minutes = Math.floor((diff % 3600) / 60);
+  const seconds = diff % 60;
+  return { days, hours, minutes, seconds };
 };
 
 export const getContractInstance = async (walletProvider) => {
@@ -132,6 +152,10 @@ export const handleBuyNFt = async (nft, walletProvider) => {
       showToast('Insufficient funds', 'error');
       throw new Error('Insufficient funds');
     }
+    if( error.reason === null) {
+      showToast('Transaction failed', 'error');
+      throw new Error('Transaction failed');
+    }
     throw error;
   }
 };
@@ -179,14 +203,12 @@ export const cancelListing = async (nft, walletProvider) => {
   }
 };
 
-
 export const invalidateQueries = (queryClient) => {
   queryClient.invalidateQueries(['profile']);
   queryClient.invalidateQueries(['buy-nfts']);
   queryClient.invalidateQueries(['nfts']);
   queryClient.invalidateQueries(['nftDetail']);
 };
-
 
 export const erc721Abi = [
   // Approve another address to transfer the given token ID

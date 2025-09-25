@@ -12,12 +12,12 @@ import { handleBuyNFt, cancelListing, showToast } from '../utils/helper';
 import { useAppKitProvider } from '@reown/appkit/react';
 
 const BuySell = () => {
+  
   const user = useSelector((state) => state.auth.user);
   const { walletProvider } = useAppKitProvider('eip155');
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [actionType, setActionType] = useState('');
   const queryClient = useQueryClient();
-
   const navigate = useNavigate();
 
   const {

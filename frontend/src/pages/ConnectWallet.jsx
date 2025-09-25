@@ -10,48 +10,12 @@ import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { ethers } from 'ethers';
 
 const ConnectWallet = () => {
+
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
-
   const [existingUser, setExistingUser] = useState(null);
-
-
-
-
-
-
-
-  
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  // useEffect(() => {
-  //     console.log("socket connected?", socket.connected, socket);
-  //     if(!socket.connected){
-  //        socket.connect();
-  //        console.log("socket connected", socket);
-  //     }
-
-  //     socket.on("connect" , () => {
-  //         console.log("socket connected", socket.id);
-  //     })
-
-  //     socket.on("disconnect" , () => {
-  //         console.log("socket disconnected", socket.id);
-  //     })
-
-  //     socket.on("connect_error", (err) => {
-  //         console.log(`Connection error: ${err}`);
-  //     });
-
-  //     return () => {
-  //       socket.off("connect");
-  //       socket.off("disconnect");
-  //       socket.off("connect_error");
-  //       socket.off("connection_success");
-  //     };
-  // }, [user.sWalletAddress])
 
   const { mutate: mutateConnectWallet, isPending } = useMutation({
     mutationFn: (payload) => connectWalletApi(payload),

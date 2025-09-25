@@ -53,7 +53,6 @@ const ListForSell = () => {
 
     switch (fieldName) {
       case 'endDate':
-        // Value here is a Date object, not a string
         if (!value) {
           error = 'Start date and time is required.';
         } else {
@@ -62,18 +61,15 @@ const ListForSell = () => {
           } else if (value.getTime() <= startDate.getTime()) {
             error = 'End date/time must be after start date/time.';
           } else if (value.getTime() - startDate.getTime() < 5 * 60 * 1000) {
-            // Minimum 5 minutes
             error = 'Auction duration must be at least 5 minutes.';
           }
         }
         break;
 
       case 'startDate':
-        // Value here is a Date object, not a string
         if (!value) {
           error = 'Start date and time is required.';
         } else {
-          // Give a small grace period for current time, e.g., 5 seconds
           if (value.getTime() < Date.now() - 5 * 1000) {
             error = 'Start date/time cannot be in the past.';
           } else if (value.getTime() < Date.now() + 5 * 60 * 1000) {
@@ -91,7 +87,6 @@ const ListForSell = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Token Address validation
     if (!formData.sTokenAddress.trim()) {
       newErrors.sTokenAddress = 'Token Address is required';
     } else if (!ethers.isAddress(formData.sTokenAddress)) {
@@ -99,7 +94,6 @@ const ListForSell = () => {
         'Invalid Ethereum address (must start with 0x and be 42 characters)';
     }
 
-    // Token ID validation
     if (!formData.nTokenId.trim()) {
       newErrors.nTokenId = 'Token ID is required';
     } else {
@@ -111,15 +105,12 @@ const ListForSell = () => {
       }
     }
 
-    // Price validation
     newErrors.nPrice = validatePrice(formData.nPrice);
 
-    // Listing Type validation
     if (!['sale', 'auction'].includes(formData.listingType)) {
       newErrors.listingType = 'Please select a valid listing type';
     }
 
-    //startDate and endDate validation for auction
     if (formData.listingType === 'auction') {
       newErrors.startDate = validateField('startDate', startDate);
       newErrors.endDate = validateField('endDate', endDate);
@@ -172,10 +163,7 @@ const ListForSell = () => {
 
       } else {
         console.log('Listing on marketplace for auction...');
-        // const durationInSeconds = parseInt(formData.nDuration) * 3600; // Convert hours to seconds
-        // Assuming createAuction method exists with these parameters
 
-        //convert in unix timestamp
         const startDateUnix = Math.floor(startDate.getTime() / 1000);
         const endDateUnix = Math.floor(endDate.getTime() / 1000);
 

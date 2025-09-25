@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { ethers } from 'ethers';
+import { showToast } from '../utils/helper';
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.75 },
@@ -71,7 +72,7 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please correct the errors in the form.');
+      showToast('Please correct the errors in the form.', "error");
       return;
     }
     setIsProcessing(true);
@@ -82,7 +83,7 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
       await onConfirmSell(nft, priceInWei.toString());
     } catch (error) {
       console.error('Error converting price to Wei:', error);
-      toast.error('Failed to process the price. Please try again.');
+      showToast('Failed to process the price. Please try again.', "error");
     } finally {
       setIsProcessing(false);
     }

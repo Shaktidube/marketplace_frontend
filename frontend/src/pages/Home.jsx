@@ -163,6 +163,7 @@ const Home = () => {
         </div>
       ) : (
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8'>
+
           {data.pages.map((page) =>
             page.data.nfts.map((nft) => (
               <Link
@@ -171,8 +172,7 @@ const Home = () => {
               className='relative bg-gray-800/80 rounded-2xl overflow-hidden shadow-lg border border-gray-700 transform transition-transform duration-300 hover:scale-105 hover:border-teal-500'
               style={{ '--animation-start ': `${animationStartTime}ms` }}
               >
-
-              <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-full before:animate-auto-shine'></div>
+                <div className='absolute inset-0 pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent before:skew-x-12 before:-translate-x-full before:animate-auto-shine'></div>
                 <div className='w-full h-56 bg-gray-900 flex items-center justify-center overflow-hidden'>
                   <img
                     src={nft.sImageUrl}
