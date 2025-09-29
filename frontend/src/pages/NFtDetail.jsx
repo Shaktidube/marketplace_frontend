@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { MdContentCopy } from 'react-icons/md';
 import {
   cancelListing,
+  checkAndApproveNFT,
   formatTimeDiff,
   getContractInstance,
   handleBuyNFt,
@@ -79,44 +80,62 @@ const NFtDetail = () => {
   const onConfirmSell = async (nft, price) => {
     try {
       setIsSellModalOpen(true);
-      console.log('sell modal is open ');
-      console.log('NFT to sell:', nft);
-      console.log('Selling price:', price);
+
+      console.log('nft to sell:', nft);
+
+      const approvalDone = await checkAndApproveNFT(
+        walletProvider,
+        nft.sTokenAddress,
+        nft.nTokenId
+      );
+
+      if (approvalDone) {
+        console.log("Approval transaction completed. Proceeding with sale...");
+      } else {
+        console.log("NFT already approved. Proceeding with sale...");
+      }
+
+      // const ethersProvider = new BrowserProvider(walletProvider);
+      // const signer = await ethersProvider.getSigner();
+
+      // const mintContract = new Contract(
+      //   data.data.nft.sTokenAddress,
+      //   tokenAbi,
+      //   signer
+      // );
+
+      // const gasEstimateApprove = await mintContract.approve.estimateGas(
+      //   import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
+      //   data.data.nft.nTokenId
+      // );
+
+      // const tx = await mintContract.approve(
+      //   import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
+      //   data.data.nft.nTokenId,
+      //   {
+      //     gasLimit: gasEstimateApprove,
+      //   }
+      // );
+      // await tx.wait();
 
       const { contract } = await getContractInstance(walletProvider);
 
-      const ethersProvider = new BrowserProvider(walletProvider);
-      const signer = await ethersProvider.getSigner();
-
-      console.log('Creating mintContract instance for NFT approval:', nft);
-
-      const mintContract = new Contract(
-        data.data.nft.sTokenAddress,
-        tokenAbi,
-        signer
-      );
-      // const setPlatform = await contract.setPlatform(import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS);
-      // await setPlatform.wait();
-      // console.log("Platform set in marketplace contract" , setPlatform);
-
-      console.log('Approving NFT for sale...', nft);
-
-      const tx = await mintContract.approve(
-        import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
-        data.data.nft.nTokenId
-      );
-      setStatus("listing");
-      await tx.wait();
-      console.log('NFT APPROVED');
-
-      const sellTx = await contract.createSale(
+      const gasEstimateSale = await contract.createSale.estimateGas(
         data.data.nft.sTokenAddress,
         data.data.nft.nTokenId,
         price
       );
+
+
+      const sellTx = await contract.createSale(
+        data.data.nft.sTokenAddress,
+        data.data.nft.nTokenId,
+        price,
+        {
+          gasLimit: gasEstimateSale,
+        }
+      );
       const rTx = await sellTx.wait();
-      // showToast("success! We will notify you when it's available", "success");
-      console.log('NFT LISTED FOR SALE', rTx);
 
       setStatus(null);
       setIsSellModalOpen(false);
@@ -131,7 +150,6 @@ const NFtDetail = () => {
       setStatus(null);
       setIsSellModalOpen(false);
       handleUserRejection(error);
-      console.log('error code : ', error.code);
     }
   };
 
@@ -140,7 +158,6 @@ const NFtDetail = () => {
       setStatus("buying");
       const result = await handleBuyNFt(data.data.nft, walletProvider);
       if (result && result.success) {
-        console.log('Buying transaction successful');
         // await delay(10000);
         // setIsBuying(false);
         // navigate('/profile');
@@ -158,7 +175,6 @@ const NFtDetail = () => {
       setStatus("cancelling");
       const result = await cancelListing(nft, walletProvider);
       if (result && result.success) {
-        console.log('Cancel listing transaction successful');
         setStatus(null);
         // await delay(10000);
         // navigate('/profile');
@@ -174,6 +190,21 @@ const NFtDetail = () => {
   const onConfirmAuction = async (nft, startingPrice, startTime, endTime) => {
     try {
       setIsAuctionModalOpen(true);
+
+
+      console.log('nft to auction:', nft);
+
+      const approvalDone = await checkAndApproveNFT(
+        walletProvider,
+        nft.sTokenAddress,
+        nft.nTokenId
+      );
+
+      if (approvalDone) {
+        console.log("Approval transaction completed. Proceeding with sale...");
+      } else {
+        console.log("NFT already approved. Proceeding with sale...");
+      }
       console.log('Auction modal is open ');
       console.log('NFT to auction:', nft);
       console.log('Starting price:', startingPrice);
@@ -181,34 +212,50 @@ const NFtDetail = () => {
 
       const { contract } = await getContractInstance(walletProvider);
 
-      const ethersProvider = new BrowserProvider(walletProvider);
-      const signer = await ethersProvider.getSigner();
+      // const ethersProvider = new BrowserProvider(walletProvider);
+      // const signer = await ethersProvider.getSigner();
 
-      console.log('Creating mintContract instance for NFT approval:', nft);
+      // console.log('Creating mintContract instance for NFT approval:', nft);
 
-      const mintContract = new Contract(
-        data.data.nft.sTokenAddress,
-        tokenAbi,
-        signer
-      );
+      // const mintContract = new Contract(
+      //   data.data.nft.sTokenAddress,
+      //   tokenAbi,
+      //   signer
+      // );
 
-      console.log('Approving NFT for auction...', nft);
+      // console.log('Approving NFT for auction...', nft);
 
-      const tx = await mintContract.approve(
-        import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
-        data.data.nft.nTokenId
-      );
+      // const gasEstimateApprove = await mintContract.approve.estimateGas(
+      //   import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
+      //   data.data.nft.nTokenId
+      // );
+
+      // const tx = await mintContract.approve(
+      //   import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
+      //   data.data.nft.nTokenId,
+      //   {
+      //     gasLimit: gasEstimateApprove,
+      //   }
+      // );
       setStatus("listing");
-      await tx.wait();
+      // await tx.wait();
       console.log('NFT APPROVED');
 
-      console.log('Creating auction...');
-      console.log(
+      // console.log('Creating auction...');
+      // console.log(
+      //   data.data.nft.sTokenAddress,
+      //   data.data.nft.nTokenId,
+      //   startTime,
+      //   endTime,
+      //   typeof startingPrice
+      // );
+
+      const gasEstimateAuction = await contract.createAuction.estimateGas(
         data.data.nft.sTokenAddress,
         data.data.nft.nTokenId,
         startTime,
         endTime,
-        typeof startingPrice
+        startingPrice
       );
 
       const auctionTx = await contract.createAuction(
@@ -216,7 +263,10 @@ const NFtDetail = () => {
         data.data.nft.nTokenId,
         startTime,
         endTime,
-        startingPrice
+        startingPrice,
+        {
+          gasLimit: gasEstimateAuction,
+        }
       );
       const rTx = await auctionTx.wait();
       console.log('NFT LISTED FOR AUCTION', rTx);
@@ -260,12 +310,19 @@ const NFtDetail = () => {
       const priceInWei = ethers.parseEther(bidAmountInput);
       console.log('price in wei', priceInWei.toString());
 
+      const gasEstimateBid = await contract.PlaceBid.estimateGas(
+        nft.sTokenAddress,
+        nft.nTokenId,
+        { value: priceInWei }
+      );
+
       const bidTx = await contract.PlaceBid(
         // import.meta.env.VITE_MINT_CONTRACT_ADDRESS,
         // "0x5A2481Ff023A4E4Bc3899Aaba142AA8d8ca18Fe4",
         nft.sTokenAddress,
         nft.nTokenId,
-        { value: priceInWei }
+        { value: priceInWei },
+        { gasLimit: gasEstimateBid }
       );
 
       await bidTx.wait();
@@ -303,9 +360,15 @@ const NFtDetail = () => {
 
       console.log('auction settlement', nft);
 
-      const NftClaimTx = await contract.WinnerNFT(
+      const gasEstimateSettlement = await contract.WinnerNFT.estimateGas(
         nft.sTokenAddress,
         nft.nTokenId
+      );
+
+      const NftClaimTx = await contract.WinnerNFT(
+        nft.sTokenAddress,
+        nft.nTokenId,
+        { gasLimit: gasEstimateSettlement }
       );
 
       await NftClaimTx.wait();
@@ -332,10 +395,15 @@ const NFtDetail = () => {
       const { contract } = await getContractInstance(walletProvider);
 
       console.log('winner claim nft', nft);
+      const gasEstimateClaim = await contract.WinnerNFT.estimateGas(
+        nft.sTokenAddress,
+        nft.nTokenId
+      );
 
       const NftClaimTx = await contract.WinnerNFT(
         nft.sTokenAddress,
-        nft.nTokenId
+        nft.nTokenId,
+        { gasLimit: gasEstimateClaim }
       );
 
       await NftClaimTx.wait();
@@ -363,9 +431,15 @@ const NFtDetail = () => {
 
       console.log('winner claim nft', nft);
 
-      const NftReClaimTx = await contract.ReclaimNft(
+      const gasEstimateReclaim = await contract.ReclaimNft.estimateGas(
         nft.sTokenAddress,
         nft.nTokenId
+      );
+
+      const NftReClaimTx = await contract.ReclaimNft(
+        nft.sTokenAddress,
+        nft.nTokenId,
+        { gasLimit: gasEstimateReclaim }
       );
 
       await NftReClaimTx.wait();
@@ -410,8 +484,7 @@ const NFtDetail = () => {
     }
   };
 
-  const { dStartTime, dEndTime, sSettlementTime, nHighestBid, sHighestBidder } =
-    nft.oAuctionDetails;
+  const { dStartTime, dEndTime, sSettlementTime, nHighestBid, sHighestBidder } = nft.oAuctionDetails;
   const now = Math.floor(Date.now() / 1000);
 
   const isAuctionEnded = nft.isApprovedForAuction && parseInt(dEndTime) <= now;
@@ -935,7 +1008,7 @@ const NFtDetail = () => {
         <SellModal
           isOpen={isSellModalOpen}
           onClose={() => setIsSellModalOpen(false)}
-          nft={nftDataForModal}
+          nft={nft}
           onConfirmSell={onConfirmSell}
         />
       )}
@@ -943,7 +1016,7 @@ const NFtDetail = () => {
         <AuctionModal
           isOpen={isAuctionModalOpen}
           onClose={() => setIsAuctionModalOpen(false)}
-          nft={nftDataForModal}
+          nft={nft}
           onConfirmAuction={onConfirmAuction}
         />
       )}
@@ -1041,15 +1114,25 @@ const NFtDetail = () => {
                   type='number'
                   id='bidAmount'
                   value={bidAmountInput}
-                  onChange={(e) => setBidAmountInput(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Limit decimal places to 18
+                    if (value.includes('.')) {
+                      const [integer, decimal] = value.split('.');
+                      if (decimal && decimal.length > 18) {
+                        return; // Don't update if more than 18 decimal places
+                      }
+                    }
+                    setBidAmountInput(value);
+                  }}
                   placeholder={
                     minimumBidRequiredEth
                       ? `Minimum ${minimumBidRequiredEth} ETH`
                       : 'Enter your bid'
                   }
-                  // step='0.000001'
+                  step='0.000000000000000001' // Smallest ETH unit (1 wei in ETH)
                   min={minimumBidRequiredEth}
-                  className='shadow appearance-none border border-gray-700 rounded-lg w-full py-3 px-4 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 bg-gray-700 focus:border-transparent transition-all duration-200' // Rounded corners for input
+                  className='shadow appearance-none border border-gray-700 rounded-lg w-full py-3 px-4 text-white leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 bg-gray-700 focus:border-transparent transition-all duration-200'
                 />
               </div>
 
@@ -1070,7 +1153,7 @@ const NFtDetail = () => {
                   onClick={() => handlePlaceBid(selectedNftForBid)}
                   disabled={
                     !bidAmountInput ||
-                    parseFloat(bidAmountInput) < minimumBidRequiredEth
+                    parseFloat(bidAmountInput) < minimumBidRequiredEth || isProcessing
                   }
                   className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-2 px-6 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg' // Increased padding, text size
                 >

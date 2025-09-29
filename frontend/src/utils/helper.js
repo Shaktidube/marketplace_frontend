@@ -4,6 +4,8 @@ import abi from './abis/abi.json';
 import tokenAbi from './abis/tokenAbi.json';
 import { useQueryClient } from '@tanstack/react-query';
 
+const MARKET_ADDRESS = import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS;
+
 export const getItemFromLocalStorage = (key) => {
   try {
     const value = localStorage.getItem(key);
@@ -98,7 +100,7 @@ export const getContractInstance = async (walletProvider) => {
   if (!walletProvider) throw new Error('Wallet provider not found');
 
   const ethersProvider = new BrowserProvider(walletProvider);
-  const signer = await ethersProvider.getSigner();
+  const signer = await ethersProvider.getSigner(); 
 
   const contract = new Contract(
     import.meta.env.VITE_MEDIA_CONTRACT_ADDRESS,
@@ -126,12 +128,22 @@ export const handleBuyNFt = async (nft, walletProvider) => {
 
     console.log('Buying NFT:', nft);
 
-    const buyTx = await contract.buyToken(
+    const estimatedGas = await contract.buyToken.estimateGas(
       // import.meta.env.VITE_MINT_CONTRACT_ADDRESS,
       // "0x5A2481Ff023A4E4Bc3899Aaba142AA8d8ca18Fe4",
       nft.sTokenAddress,
       nft.nTokenId,
       { value: priceInWei }
+    );
+    console.log("Estimated Gas for Buying NFT:", estimatedGas.toString());
+
+    const buyTx = await contract.buyToken(
+      // import.meta.env.VITE_MINT_CONTRACT_ADDRESS,
+      // "0x5A2481Ff023A4E4Bc3899Aaba142AA8d8ca18Fe4",
+      nft.sTokenAddress,
+      nft.nTokenId,
+      { value: priceInWei },
+      { gasLimit: estimatedGas }
     );
 
     await buyTx.wait();
@@ -181,11 +193,20 @@ export const cancelListing = async (nft, walletProvider) => {
     // await tx.wait();
     // console.log("NFT approval to zero address done");
 
-    const cancelTx = await contract.cancelSale(
+    const estimatedGas = await contract.cancelSale.estimateGas(
       // import.meta.env.VITE_MINT_CONTRACT_ADDRESS,
       // "0x5A2481Ff023A4E4Bc3899Aaba142AA8d8ca18Fe4",
       nft.sTokenAddress,
       nft.nTokenId
+    );
+    console.log("Estimated Gas for Cancelling Listing:", estimatedGas.toString());
+
+    const cancelTx = await contract.cancelSale(
+      // import.meta.env.VITE_MINT_CONTRACT_ADDRESS,
+      // "0x5A2481Ff023A4E4Bc3899Aaba142AA8d8ca18Fe4",
+      nft.sTokenAddress,
+      nft.nTokenId,
+      { gasLimit: estimatedGas }
     );
 
     await cancelTx.wait();
@@ -209,6 +230,63 @@ export const invalidateQueries = (queryClient) => {
   queryClient.invalidateQueries(['nfts']);
   queryClient.invalidateQueries(['nftDetail']);
 };
+
+
+export const checkAndApproveNFT = async (
+  walletProvider,
+  tokenAddress,
+  tokenId
+) => {
+  const { signer } = await getContractInstance(walletProvider);
+
+  const tokenContract = new ethers.Contract(
+    tokenAddress,
+    [
+      "function approve(address to,uint256 tokenId) external",
+      "function getApproved(uint256 tokenId) view returns (address)",
+      "function isApprovedForAll(address owner, address operator) view returns (bool)",
+    ],
+    signer
+  );
+
+  const approvedAddress = await tokenContract.getApproved(tokenId);
+
+  const isAllApproved = await tokenContract.isApprovedForAll(
+    signer.address,
+    MARKET_ADDRESS
+  );
+
+  // ✅ Already approved → no need for popup
+  if (approvedAddress === MARKET_ADDRESS || isAllApproved) {
+    console.log("Already approved for marketplace");
+    return false; // means approval was NOT required
+  }
+
+  // ❌ Not approved → need to approve
+  try {
+    const estimatedGas = await tokenContract.approve.estimateGas(
+      MARKET_ADDRESS,
+      tokenId
+    );
+    console.log("Estimated Gas for Approval:", estimatedGas.toString());
+  } catch (gasError) {
+    console.log("Gas Estimation Error - transaction will likely revert:", gasError);
+    const message =
+      gasError?.reason ||
+      gasError?.error?.message ||
+      gasError?.data?.message ||
+      gasError?.message ||
+      "Approval failed";
+    throw { ...gasError, reason: message };
+  }
+
+  const approveTx = await tokenContract.approve(MARKET_ADDRESS, tokenId);
+  const receipt = await approveTx.wait();
+  console.log("Approve:", receipt);
+
+  return true; // means approval was done just now
+};
+
 
 export const erc721Abi = [
   // Approve another address to transfer the given token ID

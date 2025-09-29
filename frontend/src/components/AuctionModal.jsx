@@ -182,8 +182,8 @@ const AuctionModal = ({ isOpen, onClose, nft, onConfirmAuction }) => {
             <h2 className='text-3xl font-bold text-white mb-6 text-center'>Start New Auction</h2>
 
             <div className='mb-6 text-center'>
-              <img src={nft?.image || 'https://via.placeholder.com/100?text=NFT'} alt={nft?.name} className='w-24 h-24 object-cover rounded-lg mx-auto mb-3 border border-gray-700'/>
-              <p className='text-lg font-semibold text-white'>{nft?.name}</p>
+              <img src={nft?.sImageUrl || 'https://via.placeholder.com/100?text=NFT'} alt={nft?.sNftName} className='w-24 h-24 object-cover rounded-lg mx-auto mb-3 border border-gray-700'/>
+              <p className='text-lg font-semibold text-white'>{nft?.sNftName}</p>
             </div>
 
             <form onSubmit={handleSubmit}>

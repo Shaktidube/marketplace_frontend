@@ -134,10 +134,10 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
 
             {nft && (
               <div className='flex flex-col items-center mb-6'>
-                {nft.image ? (
+                {nft.sImageUrl ? (
                   <img
-                    src={nft.image}
-                    alt={nft.name || 'NFT Image'}
+                    src={nft.sImageUrl}
+                    alt={nft.sNftName || 'NFT Image'}
                     className='w-32 h-32 object-cover rounded-lg border border-gray-600 shadow-md mb-4'
                   />
                 ) : (
@@ -146,11 +146,11 @@ function SellModal({ isOpen, onClose, nft, onConfirmSell }) {
                   </div>
                 )}
                 <h3 className='text-xl font-semibold text-white text-center'>
-                  {nft.name}
+                  {nft.sNftName}
                 </h3>
-                <p className='text-gray-400 text-sm'>{nft.symbol}</p>
+                {/* <p className='text-gray-400 text-sm'>{nft.symbol}</p> */}
                 <p className='text-gray-500 text-xs mt-1 break-all'>
-                  {nft.mintAddress}
+                  {nft.sTokenAddress}
                 </p>
               </div>
             )}
